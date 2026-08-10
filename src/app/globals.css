@@ -1,26 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffbf7;
+  --foreground: #1c1917;
+  --campero-orange: #e85d04;
+  --campero-orange-dark: #d00000;
+  --campero-yellow: #ffba08;
+  --campero-amber: #f48c06;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-campero-orange: var(--campero-orange);
+  --color-campero-orange-dark: var(--campero-orange-dark);
+  --color-campero-yellow: var(--campero-yellow);
+  --color-campero-amber: var(--campero-amber);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Soft scrollbar for horizontal nav */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #e7e5e4;
+  border-radius: 999px;
+}
+
+/* Print-friendly preview */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #brief-preview,
+  #brief-preview * {
+    visibility: visible;
+  }
+  #brief-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+/* Date inputs consistent height */
+input[type="date"] {
+  min-height: 42px;
+}
+
+/* Checkbox accent */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--campero-orange);
 }

@@ -1,0 +1,11 @@
+# Static export deploy (output: "export" → out/)
+# Works for Git-connected Netlify builds and matches drag-and-drop of `out/`.
+
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# No @netlify/plugin-nextjs — this is a plain static site from `next export` / output: "export"
