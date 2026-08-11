@@ -1,47 +1,10 @@
 "use client";
 
 import { SECTIONS } from "@/lib/brandGuidelines";
-import type { SectionId } from "@/lib/types";
+import { sectionComplete } from "@/lib/sectionProgress";
 import { useBriefStore } from "@/store/briefStore";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
-
-function sectionComplete(id: SectionId, brief: ReturnType<typeof useBriefStore.getState>["brief"]): boolean {
-  switch (id) {
-    case "overview":
-      return !!(brief.projectLead && brief.promoName && brief.launchDate);
-    case "messaging":
-      return brief.messagingBullets.some((b) => b.text.trim());
-    case "digital":
-      return (
-        Array.isArray(brief.digitalAssets) &&
-        brief.digitalAssets.some((a) => a.enabled)
-      );
-    case "it":
-      return (
-        Array.isArray(brief.itElements) &&
-        brief.itElements.some((a) => a.enabled)
-      );
-    case "paid":
-      return (
-        Array.isArray(brief.paidMedia) &&
-        brief.paidMedia.some((a) => a.enabled)
-      );
-    case "pr":
-      return brief.pr.blogPost.enabled || brief.pr.pressRelease.enabled;
-    case "physical":
-      return (
-        Array.isArray(brief.physicalAssets) &&
-        brief.physicalAssets.some((a) => a.enabled)
-      );
-    case "legal":
-      return !!brief.legal.legalText.trim();
-    case "review":
-      return false;
-    default:
-      return false;
-  }
-}
 
 export function FormNav() {
   const active = useBriefStore((s) => s.activeSection);

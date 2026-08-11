@@ -1,5 +1,8 @@
 import type { PhysicalAsset, PromoBrief } from "./types";
-import { LEGAL_TEMPLATES } from "./legalTemplates";
+import {
+  BUILTIN_LEGAL_TEMPLATES,
+  findTemplateText,
+} from "./legalTemplates";
 import {
   createDefaultDigitalAssets,
   createDigitalAsset,
@@ -285,7 +288,8 @@ export function createSampleBrief(): PromoBrief {
 
     legal: {
       templateId: "bogoLoyalty",
-      legalText: LEGAL_TEMPLATES.bogoLoyalty.text,
+      legalText:
+        findTemplateText(BUILTIN_LEGAL_TEMPLATES, "bogoLoyalty") || "",
       copyrightVariant: "digital",
       copyrightYear: new Date().getFullYear(),
     },

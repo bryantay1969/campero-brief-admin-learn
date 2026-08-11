@@ -23,14 +23,14 @@ import {
 type LeftToolbarProps = {
   saveStatus: "idle" | "saving" | "saved" | "error";
   saveError: string | null;
-  onRetrySave: () => void | Promise<void>;
+  onSave: () => void | Promise<void>;
   onHide?: () => void;
 };
 
 export function LeftToolbar({
   saveStatus,
   saveError,
-  onRetrySave,
+  onSave,
   onHide,
 }: LeftToolbarProps) {
   const router = useRouter();
@@ -222,7 +222,7 @@ export function LeftToolbar({
           {saveError && (
             <button
               type="button"
-              onClick={() => void onRetrySave()}
+              onClick={() => void onSave()}
               className="mt-1 text-[11px] font-semibold text-red-600 underline"
             >
               Retry save

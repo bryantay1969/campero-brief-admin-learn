@@ -51,17 +51,6 @@ export const BUILTIN_LEGAL_TEMPLATES: LegalTemplateDef[] = [
   },
 ];
 
-/** @deprecated Use BUILTIN_LEGAL_TEMPLATES or fetchLegalTemplatesForForm */
-export const LEGAL_TEMPLATES: Record<
-  string,
-  { label: string; description: string; text: string }
-> = Object.fromEntries(
-  BUILTIN_LEGAL_TEMPLATES.map((t) => [
-    t.slug,
-    { label: t.label, description: t.description, text: t.text },
-  ])
-);
-
 export function getCopyrightLine(
   variant: "print" | "digital",
   year: number

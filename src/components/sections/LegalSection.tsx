@@ -52,10 +52,6 @@ export function LegalSection() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isEditing) setDraftText(legal.legalText);
-  }, [legal.legalText, isEditing]);
-
   const selectedTemplate = useMemo(
     () =>
       templates.find(
@@ -68,7 +64,8 @@ export function LegalSection() {
     !!selectedTemplate &&
     legal.legalText.trim() === selectedTemplate.text.trim();
 
-  const draftDirty = draftText !== legal.legalText;
+  const draftDirty = isEditing && draftText !== legal.legalText;
+  const displayText = isEditing ? draftText : legal.legalText;
 
   const applyTemplate = (t: LegalTemplateDef) => {
     if (isEditing && draftDirty) {
@@ -334,7 +331,7 @@ export function LegalSection() {
           </div>
         ) : (
           <div className="rounded-lg border border-stone-200 bg-white px-3 py-3 text-[13px] font-serif leading-relaxed text-stone-800 whitespace-pre-wrap max-h-48 overflow-y-auto">
-            {legal.legalText || (
+            {displayText || (
               <span className="text-stone-400 font-sans text-sm">
                 Choose a shared template above to fill this brief.
               </span>

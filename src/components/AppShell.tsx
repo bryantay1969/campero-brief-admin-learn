@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useBriefStore, migrateLegacyDraft } from "@/store/briefStore";
 import { BrandGuidelinesPanel } from "@/components/BrandGuidelines";
 import { SavedBriefsPanel } from "@/components/SavedBriefsPanel";
-import { AutoSaveEngine } from "@/components/SaveControls";
+import { SectionSaveEngine } from "@/components/SectionSaveEngine";
 import { LeftToolbar } from "@/components/LeftToolbar";
 import { FormNav } from "@/components/FormNav";
 import { PromoOverview } from "@/components/sections/PromoOverview";
@@ -135,7 +135,7 @@ export function AppShell() {
     "Untitled draft";
 
   return (
-    <AutoSaveEngine>
+    <SectionSaveEngine>
       {({ status, error, runSave }) => (
         <div className="min-h-screen bg-[#FFFBF7] text-stone-900">
           <BriefUrlSync />
@@ -147,7 +147,7 @@ export function AppShell() {
                 <LeftToolbar
                   saveStatus={status}
                   saveError={error}
-                  onRetrySave={runSave}
+                  onSave={runSave}
                   onHide={() => setSidebar(false)}
                 />
               </div>
@@ -166,7 +166,7 @@ export function AppShell() {
                   <LeftToolbar
                     saveStatus={status}
                     saveError={error}
-                    onRetrySave={runSave}
+                    onSave={runSave}
                     onHide={() => setMobileNavOpen(false)}
                   />
                   <button
@@ -291,6 +291,6 @@ export function AppShell() {
           <SavedBriefsPanel />
         </div>
       )}
-    </AutoSaveEngine>
+    </SectionSaveEngine>
   );
 }

@@ -6,33 +6,31 @@ import { defaultBriefName } from "@/lib/briefIds";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { upsertCloudBrief } from "@/lib/supabase/briefsApi";
 
-export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
+export type SectionSaveStatus = "idle" | "saving" | "saved" | "error";
 
 /**
- * Saves only when the user changes section (advances/jumps tabs).
- * No debounced typing saves.
+ * Saves the open brief when the user changes section tabs
+ * (Save and Continue / section chips). No save-on-keystroke.
  */
-export function AutoSaveEngine({
+export function SectionSaveEngine({
   children,
 }: {
   children: (api: {
-    status: AutoSaveStatus;
+    status: SectionSaveStatus;
     error: string | null;
     runSave: () => Promise<void>;
   }) => ReactNode;
 }) {
-  const isDirty = useBriefStore((s) => s.isDirty);
   const activeSection = useBriefStore((s) => s.activeSection);
   const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
   const hydrated = useBriefStore((s) => s.hydrated);
-
   const { cloudEnabled, user, canEdit, refreshCloudLibrary } = useAuth();
 
-  const [status, setStatus] = useState<AutoSaveStatus>("idle");
+  const [status, setStatus] = useState<SectionSaveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const savingRef = useRef(false);
   const prevSectionRef = useRef(activeSection);
-  const hydratedRef = useRef(false);
+  const skipFirstSectionEffect = useRef(true);
 
   const runSave = useCallback(async () => {
     if (!canEdit || !hydrated || savingRef.current) return;
@@ -76,7 +74,7 @@ export function AutoSaveEngine({
       }, 2000);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Save failed";
-      console.error("Tab save failed:", e);
+      console.error("Section save failed:", e);
       setError(msg);
       setStatus("error");
     } finally {
@@ -91,13 +89,11 @@ export function AutoSaveEngine({
     refreshCloudLibrary,
   ]);
 
-  // Save only when the active section changes (next/prev or section chip)
   useEffect(() => {
     if (!hydrated) return;
 
-    // Skip the first run after mount/hydrate so we don't save on load
-    if (!hydratedRef.current) {
-      hydratedRef.current = true;
+    if (skipFirstSectionEffect.current) {
+      skipFirstSectionEffect.current = false;
       prevSectionRef.current = activeSection;
       return;
     }
@@ -110,13 +106,6 @@ export function AutoSaveEngine({
       void runSave();
     }
   }, [activeSection, hydrated, canEdit, runSave]);
-
-  // Reflect unsaved state without auto-saving
-  useEffect(() => {
-    if (!hydrated || !canEdit) return;
-    if (status === "saving" || status === "error") return;
-    if (isDirty && status === "saved") setStatus("idle");
-  }, [isDirty, hydrated, canEdit, status]);
 
   return <>{children({ status, error, runSave })}</>;
 }
