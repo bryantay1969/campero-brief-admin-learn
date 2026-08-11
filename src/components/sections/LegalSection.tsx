@@ -7,29 +7,16 @@ import {
   SectionCard,
   FieldLabel,
   TextArea,
-  TextInput,
 } from "@/components/ui/FormControls";
 import {
   BUILTIN_LEGAL_TEMPLATES,
   getCopyrightLine,
   type LegalTemplateDef,
 } from "@/lib/legalTemplates";
-import {
-  createLegalTemplate,
-  deleteLegalTemplate,
-  fetchLegalTemplatesForForm,
-  saveSharedLegalTemplate,
-} from "@/lib/supabase/legalTemplatesApi";
+import { fetchLegalTemplatesForForm } from "@/lib/supabase/legalTemplatesApi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { cn } from "@/lib/utils";
-import {
-  ExternalLink,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Save,
-  Trash2,
-} from "lucide-react";
+import { ExternalLink, Pencil, RotateCcw, Save } from "lucide-react";
 
 export function LegalSection() {
   const brief = useBriefStore((s) => s.brief);
@@ -44,32 +31,25 @@ export function LegalSection() {
   const [loading, setLoading] = useState(true);
 
   const [isEditing, setIsEditing] = useState(false);
-  /** Admin shared (global) vs one-off text on this brief only */
-  const [editMode, setEditMode] = useState<"shared" | "brief">("shared");
   const [draftText, setDraftText] = useState(legal.legalText);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const [showNew, setShowNew] = useState(false);
-  const [newLabel, setNewLabel] = useState("");
-  const [newSlug, setNewSlug] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newBody, setNewBody] = useState("");
-
-  const reloadTemplates = async () => {
-    setLoading(true);
-    try {
-      const list = await fetchLegalTemplatesForForm();
-      setTemplates(list);
-      setSource(list.some((t) => t.dbId) ? "cloud" : "builtin");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    void reloadTemplates();
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const list = await fetchLegalTemplatesForForm();
+        if (cancelled) return;
+        setTemplates(list);
+        setSource(list.some((t) => t.dbId) ? "cloud" : "builtin");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -89,9 +69,6 @@ export function LegalSection() {
     legal.legalText.trim() === selectedTemplate.text.trim();
 
   const draftDirty = draftText !== legal.legalText;
-  const draftDiffersFromShared =
-    !!selectedTemplate &&
-    draftText.trim() !== selectedTemplate.text.trim();
 
   const applyTemplate = (t: LegalTemplateDef) => {
     if (isEditing && draftDirty) {
@@ -108,74 +85,17 @@ export function LegalSection() {
     setDraftText(t.text);
     setIsEditing(false);
     setMessage(null);
-    setError(null);
   };
 
-  /** Admin: edit the global shared template (not this brief only). */
-  const startEditShared = () => {
-    if (!selectedTemplate) {
-      window.alert(
-        "Select a template chip first, then edit that shared template for everyone."
-      );
-      return;
-    }
-    setEditMode("shared");
-    setDraftText(selectedTemplate.text);
-    setIsEditing(true);
-    setMessage(null);
-    setError(null);
-  };
-
-  /** One-off override on this promo only (does not change shared library). */
   const startEditBriefOnly = () => {
-    setEditMode("brief");
     setDraftText(legal.legalText);
     setIsEditing(true);
     setMessage(null);
-    setError(null);
   };
 
   const cancelEditing = () => {
     setDraftText(legal.legalText);
     setIsEditing(false);
-    setError(null);
-  };
-
-  const saveSharedTemplate = async () => {
-    if (!canAdmin || !selectedTemplate) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const updated = await saveSharedLegalTemplate({
-        slug: selectedTemplate.slug,
-        label: selectedTemplate.label,
-        description: selectedTemplate.description,
-        body: draftText,
-        sort_order: selectedTemplate.sortOrder,
-      });
-      await reloadTemplates();
-      // Keep this open brief in sync with the new global text
-      patch("legal", {
-        ...legal,
-        templateId: updated.slug,
-        legalText: updated.body,
-      });
-      setDraftText(updated.body);
-      setIsEditing(false);
-      setMessage(
-        `Global template “${updated.label}” saved. Everyone sees this chip with the new text. New briefs that pick it get this version. (Already-saved briefs keep their own copy until someone re-selects the chip.)`
-      );
-    } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Could not save shared template";
-      setError(
-        msg.includes("relation") || msg.includes("does not exist")
-          ? `${msg} — Run supabase/legal-templates.sql in the Supabase SQL Editor first.`
-          : msg
-      );
-    } finally {
-      setSaving(false);
-    }
   };
 
   const saveBriefOnly = () => {
@@ -195,7 +115,7 @@ export function LegalSection() {
     setMessage(
       stillMatches
         ? "Legal text matches the shared template."
-        : "One-off legal text saved on this brief only. The shared template library was not changed."
+        : "Saved for this brief only. Shared templates were not changed."
     );
   };
 
@@ -209,102 +129,6 @@ export function LegalSection() {
     setDraftText(selectedTemplate.text);
     setIsEditing(false);
     setMessage(`Restored shared template “${selectedTemplate.label}”.`);
-  };
-
-  const createNewShared = async () => {
-    if (!canAdmin) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const slug =
-        newSlug.trim() ||
-        newLabel
-          .trim()
-          .replace(/\s+/g, "")
-          .replace(/[^a-zA-Z0-9_-]/g, "") ||
-        `template${Date.now()}`;
-      const created = await createLegalTemplate({
-        slug,
-        label: newLabel.trim(),
-        description: newDescription.trim(),
-        body: newBody.trim(),
-        sort_order: 100 + templates.length * 10,
-        is_active: true,
-      });
-      await reloadTemplates();
-      patch("legal", {
-        ...legal,
-        templateId: created.slug,
-        legalText: created.body,
-      });
-      setShowNew(false);
-      setNewLabel("");
-      setNewSlug("");
-      setNewDescription("");
-      setNewBody("");
-      setMessage(
-        `New shared template “${created.label}” is available to everyone on the Legal tab.`
-      );
-    } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Could not create template";
-      setError(
-        msg.includes("relation") || msg.includes("does not exist")
-          ? `${msg} — Run supabase/legal-templates.sql in the Supabase SQL Editor first.`
-          : msg
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteSharedTemplate = async () => {
-    if (!canAdmin || !selectedTemplate) return;
-
-    if (!selectedTemplate.dbId) {
-      window.alert(
-        "This template isn’t in the cloud library yet, so there’s nothing global to delete. Save it for everyone first, or manage templates under Admin → Legal."
-      );
-      return;
-    }
-
-    const label = selectedTemplate.label;
-    const ok = window.confirm(
-      [
-        `Delete template “${label}” for EVERYONE?`,
-        "",
-        "This removes the chip from the Legal tab for all users.",
-        "It cannot be undone from this screen.",
-        "",
-        "Briefs that already saved this text keep their own copy. New briefs will no longer see this template.",
-      ].join("\n")
-    );
-    if (!ok) return;
-
-    setSaving(true);
-    setError(null);
-    try {
-      await deleteLegalTemplate(selectedTemplate.dbId);
-      await reloadTemplates();
-      // Keep this brief’s legal text; mark as custom so it isn’t tied to a missing chip
-      if (legal.templateId === selectedTemplate.slug) {
-        patch("legal", {
-          ...legal,
-          templateId: "custom",
-          legalText: legal.legalText,
-        });
-      }
-      setIsEditing(false);
-      setMessage(
-        `Deleted “${label}” for everyone. The chip is gone from the shared library.`
-      );
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not delete shared template"
-      );
-    } finally {
-      setSaving(false);
-    }
   };
 
   const copyright = getCopyrightLine(
@@ -329,10 +153,15 @@ export function LegalSection() {
 
       {canAdmin && (
         <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-950">
-          <strong>Admin · global templates.</strong> Edits and new templates
-          update the shared library for <strong>everyone</strong>. New briefs
-          that pick a chip get the latest text. Use “Save for this brief only”
-          when a single promo needs different legal language.
+          <strong>Admin:</strong> add, edit, or delete shared templates on{" "}
+          <Link
+            href="/admin/legal/"
+            className="font-semibold underline underline-offset-2"
+          >
+            Manage all templates
+          </Link>
+          . Changes there apply for everyone. On this tab you only pick a
+          template or save text for this brief.
         </div>
       )}
 
@@ -341,22 +170,17 @@ export function LegalSection() {
           {message}
         </div>
       )}
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </div>
-      )}
 
-      {/* Shared template library */}
+      {/* Shared template library (pick only) */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-          <FieldLabel>Shared templates (global library)</FieldLabel>
+          <FieldLabel>Shared templates</FieldLabel>
           <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400">
             {loading
               ? "Loading…"
               : source === "cloud"
                 ? "From Supabase · live for all users"
-                : "Built-in fallback · save once to publish to cloud"}
+                : "Built-in fallback"}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -384,36 +208,10 @@ export function LegalSection() {
           })}
         </div>
         {canAdmin && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setShowNew(true);
-                setError(null);
-                setMessage(null);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add template for everyone
-            </button>
-            <button
-              type="button"
-              disabled={saving || !selectedTemplate}
-              onClick={() => void deleteSharedTemplate()}
-              title={
-                selectedTemplate
-                  ? `Delete “${selectedTemplate.label}” for everyone`
-                  : "Select a template chip first"
-              }
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete for everyone
-            </button>
+          <div className="mt-3">
             <Link
               href="/admin/legal/"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Manage all templates
@@ -422,14 +220,12 @@ export function LegalSection() {
         )}
       </div>
 
-      {/* Current brief text + actions */}
+      {/* Legal text for this brief only */}
       <div
         className={cn(
           "rounded-xl border px-4 py-3 space-y-3",
           isEditing
-            ? editMode === "shared"
-              ? "border-violet-300 bg-violet-50/50"
-              : "border-amber-300 bg-amber-50/40"
+            ? "border-campero-orange bg-orange-50/50"
             : "border-stone-200 bg-stone-50/80"
         )}
       >
@@ -442,7 +238,7 @@ export function LegalSection() {
               <p className="text-sm text-stone-800 mt-0.5">
                 {selectedTemplate && matchesSelectedTemplate ? (
                   <>
-                    Matches shared template{" "}
+                    Using shared template{" "}
                     <strong>{selectedTemplate.label}</strong>
                   </>
                 ) : selectedTemplate ? (
@@ -454,56 +250,31 @@ export function LegalSection() {
                 ) : (
                   <>
                     Custom text on this brief{" "}
-                    <span className="text-stone-500">(not a library template)</span>
+                    <span className="text-stone-500">
+                      (not a library template)
+                    </span>
                   </>
                 )}
               </p>
             )}
             {isEditing && (
-              <p className="text-sm font-semibold mt-0.5 flex items-center gap-1.5">
+              <p className="text-sm font-semibold mt-0.5 flex items-center gap-1.5 text-campero-orange">
                 <Pencil className="h-3.5 w-3.5" />
-                {editMode === "shared" ? (
-                  <span className="text-violet-800">
-                    Editing for everyone
-                    {selectedTemplate
-                      ? ` “${selectedTemplate.label}”`
-                      : ""}{" "}
-                    — all users · new briefs
-                  </span>
-                ) : (
-                  <span className="text-amber-900">
-                    Editing for this brief only
-                    {draftDirty ? " · unsaved" : ""}
-                  </span>
-                )}
+                Editing this brief only
+                {draftDirty ? " · unsaved" : ""}
               </p>
             )}
           </div>
 
           {canEdit && !isEditing && (
             <div className="flex flex-wrap gap-2">
-              {canAdmin && selectedTemplate && (
-                <button
-                  type="button"
-                  onClick={startEditShared}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit for everyone
-                </button>
-              )}
               <button
                 type="button"
                 onClick={startEditBriefOnly}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold",
-                  canAdmin
-                    ? "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
-                    : "border-campero-orange/40 bg-orange-50 text-stone-800 hover:bg-orange-100"
-                )}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-campero-orange/40 bg-orange-50 px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-orange-100"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                {canAdmin ? "Save for this brief only" : "Edit legal text"}
+                Edit this brief
               </button>
               {!matchesSelectedTemplate && selectedTemplate && (
                 <button
@@ -521,21 +292,21 @@ export function LegalSection() {
 
         {isEditing ? (
           <div className="space-y-3">
-            {editMode === "shared" && (
-              <p className="text-xs text-violet-900 bg-violet-100/80 border border-violet-200 rounded-lg px-3 py-2">
-                <strong>Global save.</strong> Updates the shared template for{" "}
-                <strong>all users</strong>. Anyone who opens Legal and picks
-                this chip (including on <strong>new briefs</strong>) gets this
-                text. Briefs already saved keep their old copy until the chip is
-                selected again.
-              </p>
-            )}
-            {editMode === "brief" && (
-              <p className="text-xs text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <strong>This brief only.</strong> Does not change the shared
-                template library or other users’ defaults.
-              </p>
-            )}
+            <p className="text-xs text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <strong>This brief only.</strong> Does not change the shared
+              template library. To change a template for everyone, use{" "}
+              {canAdmin ? (
+                <Link
+                  href="/admin/legal/"
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Manage all templates
+                </Link>
+              ) : (
+                "Manage all templates (admin)"
+              )}
+              .
+            </p>
             <TextArea
               value={draftText}
               onChange={(e) => setDraftText(e.target.value)}
@@ -544,26 +315,14 @@ export function LegalSection() {
               autoFocus
             />
             <div className="flex flex-wrap gap-2">
-              {editMode === "shared" ? (
-                <button
-                  type="button"
-                  disabled={saving || !draftDiffersFromShared}
-                  onClick={() => void saveSharedTemplate()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
-                >
-                  <Save className="h-4 w-4" />
-                  {saving ? "Saving…" : "Save for everyone"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={saveBriefOnly}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-4 py-2.5 text-sm font-bold text-white hover:bg-campero-orange-dark"
-                >
-                  <Save className="h-4 w-4" />
-                  Save for this brief only
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={saveBriefOnly}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-4 py-2.5 text-sm font-bold text-white hover:bg-campero-orange-dark"
+              >
+                <Save className="h-4 w-4" />
+                Save for this brief only
+              </button>
               <button
                 type="button"
                 onClick={cancelEditing}
@@ -583,74 +342,6 @@ export function LegalSection() {
           </div>
         )}
       </div>
-
-      {/* Admin: create new shared template for everyone */}
-      {showNew && canAdmin && (
-        <div className="rounded-xl border border-violet-300 bg-violet-50/50 p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-bold text-violet-900">
-                Add template for everyone
-              </p>
-              <p className="text-xs text-violet-800 mt-0.5">
-                Creates a new chip on the Legal tab for all users.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowNew(false)}
-              className="text-xs font-semibold text-stone-500"
-            >
-              Close
-            </button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <FieldLabel>Label</FieldLabel>
-              <TextInput
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                placeholder="e.g. Catering promo"
-              />
-            </div>
-            <div>
-              <FieldLabel hint="Short id, no spaces">Slug</FieldLabel>
-              <TextInput
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                placeholder="e.g. cateringPromo"
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <div>
-            <FieldLabel>Short description</FieldLabel>
-            <TextInput
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Shown under the chip"
-            />
-          </div>
-          <div>
-            <FieldLabel>Legal text</FieldLabel>
-            <TextArea
-              value={newBody}
-              onChange={(e) => setNewBody(e.target.value)}
-              rows={5}
-              className="font-serif text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            disabled={saving || !newLabel.trim() || !newBody.trim()}
-            onClick={() => void createNewShared()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" />
-            {saving ? "Creating…" : "Create shared template"}
-          </button>
-        </div>
-      )}
 
       <div>
         <FieldLabel>Copyright line</FieldLabel>

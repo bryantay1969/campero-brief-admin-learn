@@ -10,7 +10,8 @@ import {
   updateLegalTemplate,
   type LegalTemplateRow,
 } from "@/lib/supabase/legalTemplatesApi";
-import { FileText, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { useBriefStore } from "@/store/briefStore";
+import { FileText, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 
 function emptyForm() {
   return {
@@ -33,6 +34,10 @@ function LegalAdminPanel() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  const brief = useBriefStore((s) => s.brief);
+  const patch = useBriefStore((s) => s.patch);
+  const promoName = brief.promoName || "";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,7 +62,7 @@ function LegalAdminPanel() {
 
   const flash = (msg: string) => {
     setMessage(msg);
-    window.setTimeout(() => setMessage(null), 2800);
+    window.setTimeout(() => setMessage(null), 3200);
   };
 
   const openCreate = () => {
@@ -88,10 +93,10 @@ function LegalAdminPanel() {
     try {
       if (editingId) {
         await updateLegalTemplate(editingId, form);
-        flash(`Updated “${form.label}”`);
+        flash(`Saved “${form.label}” for everyone`);
       } else {
         await createLegalTemplate(form);
-        flash(`Created “${form.label}”`);
+        flash(`Created “${form.label}” for everyone`);
       }
       setShowForm(false);
       setEditingId(null);
@@ -102,6 +107,35 @@ function LegalAdminPanel() {
     } finally {
       setBusy(false);
     }
+  };
+
+  /** Apply current form legal text to the open brief only (does not change shared library). */
+  const saveForThisBriefOnly = () => {
+    if (!form.body.trim()) {
+      setError("Legal text is required to save on this brief.");
+      return;
+    }
+    const libraryBody = editingId
+      ? rows.find((r) => r.id === editingId)?.body.trim()
+      : undefined;
+    const stillMatches =
+      !!libraryBody && libraryBody === form.body.trim() && !!form.slug.trim();
+
+    patch("legal", {
+      ...brief.legal,
+      templateId: stillMatches ? form.slug.trim() : "custom",
+      legalText: form.body,
+    });
+    flash(
+      stillMatches
+        ? `Brief legal text matches “${form.label || form.slug}”.`
+        : `Saved legal text for this brief only${
+            promoName ? ` (“${promoName}”)` : ""
+          }. Shared templates were not changed.`
+    );
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm());
   };
 
   const onDelete = async (row: LegalTemplateRow) => {
@@ -139,10 +173,10 @@ function LegalAdminPanel() {
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight">
-                Legal templates
+                Manage all templates
               </h1>
               <p className="text-xs text-stone-500">
-                Content config · drives the Legal section quick-select chips
+                Shared legal library · Legal tab chips for every user
               </p>
             </div>
           </div>
@@ -158,10 +192,10 @@ function LegalAdminPanel() {
             <button
               type="button"
               onClick={openCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add template
+              Add template for everyone
             </button>
             <Link
               href="/admin/"
@@ -181,20 +215,24 @@ function LegalAdminPanel() {
 
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
         <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm text-sm text-violet-950">
-          <p className="font-semibold">
-            Global content config — not per-brief.
-          </p>
+          <p className="font-semibold">Shared library for everyone</p>
           <p className="mt-1 text-violet-900/90">
-            Templates here appear as quick-select chips on the{" "}
-            <strong>Legal</strong> tab for <strong>every user</strong>. Edits
-            and new templates apply to the shared library immediately (no code
-            deploy). New briefs that pick a chip get the latest text; briefs
-            already saved keep their own legal copy until someone re-selects the
-            chip.
+            <strong>Add template for everyone</strong> creates a new Legal chip
+            for all users. Open a template and use{" "}
+            <strong>Save for everyone</strong> to update the shared library, or{" "}
+            <strong>Save for this brief only</strong> to put this text on the
+            brief you currently have open in the builder
+            {promoName ? (
+              <>
+                {" "}
+                (<em>{promoName}</em>)
+              </>
+            ) : null}
+            — without changing the library.
           </p>
           <p className="mt-2 text-xs text-violet-800/80">
-            <strong>Slug</strong> is a short id (e.g. <code>bogoLoyalty</code>)
-            used by the form. Keep stable if you already rely on it.
+            <strong>Slug</strong> is a short id (e.g. <code>bogoLoyalty</code>).
+            Keep stable if you already rely on it.
           </p>
         </section>
 
@@ -206,7 +244,8 @@ function LegalAdminPanel() {
         {error && (
           <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 whitespace-pre-wrap">
             {error}
-            {(error.includes("relation") || error.includes("does not exist")) && (
+            {(error.includes("relation") ||
+              error.includes("does not exist")) && (
               <span className="block mt-2 text-xs">
                 Run <code>supabase/legal-templates.sql</code> in the Supabase
                 SQL Editor first.
@@ -231,17 +270,19 @@ function LegalAdminPanel() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-campero-orange">
-                      {editingId ? "Editing shared template" : "New shared template"}
+                      {editingId
+                        ? "Edit shared template"
+                        : "Add template for everyone"}
                     </p>
                     <h3 className="text-base font-bold text-stone-900 mt-0.5">
                       {editingId
                         ? form.label || "Untitled template"
-                        : "Add template"}
+                        : "New template"}
                     </h3>
                     <p className="text-xs text-stone-500 mt-1">
                       {editingId
-                        ? "Global edit — everyone gets this on the Legal tab after save. New briefs that pick this chip use the new text."
-                        : "Creates a new shared chip available to everyone on the Legal tab."}
+                        ? "Save for everyone updates the library. Save for this brief only updates the open brief."
+                        : "Creates a new shared chip on the Legal tab for all users."}
                     </p>
                   </div>
                   <button
@@ -254,110 +295,125 @@ function LegalAdminPanel() {
                 </div>
               </div>
               <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-600">
+                      Label
+                    </label>
+                    <input
+                      required
+                      value={form.label}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, label: e.target.value }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                      placeholder="Standard"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-stone-600">
+                      Slug (id)
+                    </label>
+                    <input
+                      required
+                      value={form.slug}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, slug: e.target.value }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-mono"
+                      placeholder="standard"
+                      disabled={!!editingId}
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
-                    Label
+                    Short description
                   </label>
                   <input
-                    required
-                    value={form.label}
+                    value={form.description}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, label: e.target.value }))
+                      setForm((f) => ({ ...f, description: e.target.value }))
                     }
                     className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                    placeholder="Standard"
+                    placeholder="Shown under the chip label"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
-                    Slug (id)
+                    Legal text
                   </label>
-                  <input
+                  <textarea
                     required
-                    value={form.slug}
+                    value={form.body}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, slug: e.target.value }))
+                      setForm((f) => ({ ...f, body: e.target.value }))
                     }
-                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-mono"
-                    placeholder="standard"
-                    disabled={!!editingId}
+                    rows={8}
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-serif leading-relaxed"
                   />
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Short description
-                </label>
-                <input
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                  placeholder="Shown under the chip label"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Legal text
-                </label>
-                <textarea
-                  required
-                  value={form.body}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, body: e.target.value }))
-                  }
-                  rows={8}
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-serif leading-relaxed"
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold text-stone-600">
-                    Sort order
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold text-stone-600">
+                      Sort order
+                    </label>
+                    <input
+                      type="number"
+                      value={form.sort_order}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          sort_order: Number(e.target.value) || 0,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-stone-700 pt-6">
+                    <input
+                      type="checkbox"
+                      checked={form.is_active}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          is_active: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-stone-300 text-campero-orange"
+                    />
+                    Active (show in form)
                   </label>
-                  <input
-                    type="number"
-                    value={form.sort_order}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        sort_order: Number(e.target.value) || 0,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                  />
                 </div>
-                <label className="flex items-center gap-2 text-sm font-medium text-stone-700 pt-6">
-                  <input
-                    type="checkbox"
-                    checked={form.is_active}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, is_active: e.target.checked }))
-                    }
-                    className="rounded border-stone-300 text-campero-orange"
-                  />
-                  Active (show in form)
-                </label>
               </div>
-              </div>
-              <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  {busy
-                    ? "Saving…"
-                    : editingId
-                      ? "Save for everyone"
-                      : "Create for everyone"}
-                </button>
+              <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    {busy
+                      ? "Saving…"
+                      : editingId
+                        ? "Save for everyone"
+                        : "Add template for everyone"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || !form.body.trim()}
+                    onClick={saveForThisBriefOnly}
+                    className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white hover:bg-campero-orange-dark disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    Save for this brief only
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-white"
+                  className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700"
                 >
                   Cancel
                 </button>
@@ -367,19 +423,23 @@ function LegalAdminPanel() {
         )}
 
         <section className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-stone-100 px-5 py-3">
-            <h2 className="text-sm font-bold">
-              Templates ({rows.length})
-            </h2>
+          <div className="border-b border-stone-100 px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-bold">Templates ({rows.length})</h2>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[11px] font-bold text-violet-900 hover:bg-violet-100"
+            >
+              <Plus className="h-3 w-3" />
+              Add template for everyone
+            </button>
           </div>
           {loading ? (
-            <p className="p-8 text-center text-sm text-stone-400">
-              Loading…
-            </p>
+            <p className="p-8 text-center text-sm text-stone-400">Loading…</p>
           ) : rows.length === 0 ? (
             <p className="p-8 text-center text-sm text-stone-400">
-              No rows yet. Run <code>legal-templates.sql</code> or click Add
-              template.
+              No rows yet. Run <code>legal-templates.sql</code> or click{" "}
+              <strong>Add template for everyone</strong>.
             </p>
           ) : (
             <ul className="divide-y divide-stone-100">
@@ -413,7 +473,7 @@ function LegalAdminPanel() {
                       <button
                         type="button"
                         onClick={() => openEdit(row)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-bold text-violet-900 hover:bg-violet-100"
                       >
                         <Pencil className="h-3 w-3" />
                         Edit
