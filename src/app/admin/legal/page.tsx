@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  FormEvent,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { AdminGate } from "@/components/auth/AdminGate";
 import {
   createLegalTemplate,
@@ -18,16 +10,7 @@ import {
   updateLegalTemplate,
   type LegalTemplateRow,
 } from "@/lib/supabase/legalTemplatesApi";
-import {
-  FileText,
-  Link2,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Save,
-  Trash2,
-  X,
-} from "lucide-react";
+import { FileText, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 
 function emptyForm() {
   return {
@@ -49,20 +32,7 @@ function slugFromLabel(label: string): string {
   return base || `template${Date.now()}`;
 }
 
-function templateEditPath(id: string): string {
-  return `/admin/legal/?edit=${encodeURIComponent(id)}`;
-}
-
-function templateEditUrl(id: string): string {
-  if (typeof window === "undefined") return templateEditPath(id);
-  return `${window.location.origin}${templateEditPath(id)}`;
-}
-
 function LegalAdminPanel() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const editParam = searchParams.get("edit");
-
   const [rows, setRows] = useState<LegalTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +42,6 @@ function LegalAdminPanel() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  /** Avoid re-opening the same deep link after the user closes the form. */
-  const openedEditRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,79 +69,31 @@ function LegalAdminPanel() {
     window.setTimeout(() => setMessage(null), 3200);
   };
 
-  const clearEditQuery = useCallback(() => {
-    router.replace("/admin/legal/", { scroll: false });
-  }, [router]);
-
   const openCreate = () => {
-    openedEditRef.current = null;
     setEditingId(null);
     setForm(emptyForm());
     setShowForm(true);
     setError(null);
-    clearEditQuery();
   };
 
-  const openEdit = useCallback(
-    (row: LegalTemplateRow, syncUrl = true) => {
-      setEditingId(row.id);
-      setForm({
-        slug: row.slug,
-        label: row.label,
-        description: row.description,
-        body: row.body,
-        sort_order: row.sort_order,
-        is_active: row.is_active,
-      });
-      setShowForm(true);
-      setError(null);
-      openedEditRef.current = row.id;
-      if (syncUrl) {
-        router.replace(templateEditPath(row.id), { scroll: false });
-      }
-    },
-    [router]
-  );
+  const openEdit = (row: LegalTemplateRow) => {
+    setEditingId(row.id);
+    setForm({
+      slug: row.slug,
+      label: row.label,
+      description: row.description,
+      body: row.body,
+      sort_order: row.sort_order,
+      is_active: row.is_active,
+    });
+    setShowForm(true);
+    setError(null);
+  };
 
   const closeForm = () => {
-    // Mark this deep link as handled so the form does not re-open before the URL clears.
-    if (editParam) openedEditRef.current = editParam;
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm());
-    clearEditQuery();
-  };
-
-  // Deep link: /admin/legal/?edit=<id|slug>
-  useEffect(() => {
-    if (!editParam) {
-      if (!showForm) openedEditRef.current = null;
-      return;
-    }
-    if (loading || rows.length === 0) return;
-    // Already opened or closed for this query value
-    if (openedEditRef.current === editParam) return;
-
-    const row = rows.find(
-      (r) => r.id === editParam || r.slug === editParam
-    );
-    if (row) {
-      openEdit(row, false);
-      openedEditRef.current = editParam;
-    } else {
-      setError(`No template found for link “${editParam}”.`);
-      openedEditRef.current = editParam;
-    }
-  }, [editParam, loading, rows, openEdit, showForm]);
-
-  const copyLink = async (row: LegalTemplateRow) => {
-    const url = templateEditUrl(row.id);
-    try {
-      await navigator.clipboard.writeText(url);
-      flash(`Link copied for “${row.label}”`);
-    } catch {
-      window.prompt("Copy this link:", url);
-    }
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -288,9 +208,9 @@ function LegalAdminPanel() {
           <p className="mt-1 text-violet-900/90">
             <strong>Add template for everyone</strong> creates a new Legal chip
             for all users. Open a template and use{" "}
-            <strong>Save for everyone</strong> to update the shared library.
-            Use <strong>Copy link</strong> to share a direct link that opens
-            that template for editing (admins only).
+            <strong>Save for everyone</strong> to update the shared library. To
+            change legal text on a single promo only, use{" "}
+            <strong>Edit this brief</strong> on the Legal tab.
           </p>
         </section>
 
@@ -426,27 +346,6 @@ function LegalAdminPanel() {
                     Active (show in form)
                   </label>
                 </div>
-                {editingId && (
-                  <div className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-2 text-xs text-stone-600">
-                    <p className="font-semibold text-stone-700 mb-1">
-                      Direct link to this template
-                    </p>
-                    <p className="font-mono break-all text-[11px] text-stone-500">
-                      {templateEditUrl(editingId)}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const row = rows.find((r) => r.id === editingId);
-                        if (row) void copyLink(row);
-                      }}
-                      className="mt-2 inline-flex items-center gap-1 text-violet-800 font-semibold hover:underline"
-                    >
-                      <Link2 className="h-3.5 w-3.5" />
-                      Copy link
-                    </button>
-                  </div>
-                )}
               </div>
               <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 flex flex-wrap gap-2">
                 <button
@@ -499,16 +398,9 @@ function LegalAdminPanel() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          href={templateEditPath(row.id)}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            openEdit(row);
-                          }}
-                          className="font-semibold text-stone-900 hover:text-violet-800 hover:underline underline-offset-2"
-                        >
+                        <span className="font-semibold text-stone-900">
                           {row.label}
-                        </Link>
+                        </span>
                         {!row.is_active && (
                           <span className="text-[10px] font-bold uppercase text-stone-400">
                             Inactive
@@ -535,15 +427,6 @@ function LegalAdminPanel() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => void copyLink(row)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                        title={templateEditUrl(row.id)}
-                      >
-                        <Link2 className="h-3 w-3" />
-                        Copy link
-                      </button>
-                      <button
-                        type="button"
                         disabled={busy}
                         onClick={() => void onDelete(row)}
                         className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
@@ -566,15 +449,7 @@ function LegalAdminPanel() {
 export default function AdminLegalPage() {
   return (
     <AdminGate>
-      <Suspense
-        fallback={
-          <div className="min-h-screen bg-[#FFFBF7] flex items-center justify-center text-sm text-stone-500">
-            Loading templates…
-          </div>
-        }
-      >
-        <LegalAdminPanel />
-      </Suspense>
+      <LegalAdminPanel />
     </AdminGate>
   );
 }

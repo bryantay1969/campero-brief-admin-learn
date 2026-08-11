@@ -43,6 +43,31 @@ export async function fetchCloudBriefs(): Promise<SavedBriefRecord[]> {
   return ((data || []) as BriefRow[]).map(rowToRecord);
 }
 
+/** Load one brief by id (for direct links). Returns null if missing or no access. */
+export async function fetchCloudBriefById(
+  id: string
+): Promise<SavedBriefRecord | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("briefs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(formatError(error));
+  if (!data) return null;
+  return rowToRecord(data as BriefRow);
+}
+
+export function briefSharePath(id: string): string {
+  return `/?brief=${encodeURIComponent(id)}`;
+}
+
+export function briefShareUrl(id: string): string {
+  if (typeof window === "undefined") return briefSharePath(id);
+  return `${window.location.origin}${briefSharePath(id)}`;
+}
+
 /**
  * Insert or update a brief in Supabase.
  * Uses true upsert so local UUIDs work as cloud IDs on first save.

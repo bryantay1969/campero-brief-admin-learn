@@ -7,6 +7,7 @@ import { downloadBriefJson, parseImportFile } from "@/lib/briefExport";
 import { defaultBriefName } from "@/lib/briefIds";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
+  briefShareUrl,
   deleteCloudBrief,
   renameCloudBrief,
   upsertCloudBrief,
@@ -16,6 +17,7 @@ import {
   Copy,
   Download,
   FolderOpen,
+  Link2,
   Pencil,
   Plus,
   Save,
@@ -510,6 +512,23 @@ export function SavedBriefsPanel() {
                           </button>
                           <button
                             type="button"
+                            onClick={async () => {
+                              const url = briefShareUrl(item.id);
+                              try {
+                                await navigator.clipboard.writeText(url);
+                                flash("Brief link copied");
+                              } catch {
+                                window.prompt("Copy this brief link:", url);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                            title={briefShareUrl(item.id)}
+                          >
+                            <Link2 className="h-3 w-3" />
+                            Copy link
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => startRename(item.id, item.name)}
                             className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
                           >
@@ -556,8 +575,9 @@ export function SavedBriefsPanel() {
         </div>
 
         <footer className="border-t border-stone-100 px-5 py-3 text-[11px] text-stone-400">
-          Briefs stay on this device/browser. Use Export JSON to back up or
-          share with a teammate.
+          Use <strong>Copy link</strong> to share a direct URL to a saved brief
+          (teammates need login + access). Export JSON still works for offline
+          backup.
         </footer>
 
         {toast && (

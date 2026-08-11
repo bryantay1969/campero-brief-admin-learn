@@ -18,6 +18,7 @@ import { ReviewGenerate } from "@/components/sections/ReviewGenerate";
 import type { SectionId } from "@/lib/types";
 import { SECTIONS } from "@/lib/brandGuidelines";
 import { AuthBar } from "@/components/auth/AuthBar";
+import { BriefUrlSync } from "@/components/BriefUrlSync";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   ChevronLeft,
@@ -123,6 +124,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-[#FFFBF7] text-stone-900">
+      <BriefUrlSync />
       <header className="border-b border-orange-100 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
