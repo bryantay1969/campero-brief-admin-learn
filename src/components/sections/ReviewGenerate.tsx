@@ -7,6 +7,7 @@ import { BriefPreview } from "@/components/preview/BriefPreview";
 import { briefToMarkdown } from "@/lib/markdown";
 import { downloadBriefPdf } from "@/lib/pdf";
 import { defaultBriefName } from "@/lib/briefIds";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   CheckCircle2,
   Copy,
@@ -27,6 +28,7 @@ export function ReviewGenerate() {
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
   const isDirty = useBriefStore((s) => s.isDirty);
   const library = useBriefStore((s) => s.library);
+  const { canEdit } = useAuth();
 
   const [pdfLoading, setPdfLoading] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "ok" | "err">("idle");
@@ -70,6 +72,12 @@ export function ReviewGenerate() {
   };
 
   const handleSave = () => {
+    if (!canEdit) {
+      window.alert(
+        "Your account is view-only. Ask an admin to grant editor access to save."
+      );
+      return;
+    }
     const active = library.find((b) => b.id === activeBriefId);
     saveToLibrary(
       active?.name || defaultBriefName(brief.promoName, brief.projectLead)
@@ -110,7 +118,14 @@ export function ReviewGenerate() {
         ))}
       </div>
 
-      {(isDirty || !activeBriefId) && (
+      {!canEdit && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          You are in <strong>view only</strong> mode. You can preview and
+          download, but not save changes to the shared library.
+        </div>
+      )}
+
+      {canEdit && (isDirty || !activeBriefId) && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           {activeBriefId
             ? "You have unsaved edits. Save to keep them for later revisits."
@@ -119,22 +134,24 @@ export function ReviewGenerate() {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          className="inline-flex items-center gap-2 rounded-xl border border-campero-orange/30 bg-orange-50 px-5 py-3 text-sm font-bold text-campero-orange shadow-sm hover:bg-orange-100 transition-colors"
-        >
-          {saveStatus === "ok" ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {saveStatus === "ok"
-            ? "Saved to library!"
-            : activeBriefId
-              ? "Save changes"
-              : "Save to library"}
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={handleSave}
+            className="inline-flex items-center gap-2 rounded-xl border border-campero-orange/30 bg-orange-50 px-5 py-3 text-sm font-bold text-campero-orange shadow-sm hover:bg-orange-100 transition-colors"
+          >
+            {saveStatus === "ok" ? (
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {saveStatus === "ok"
+              ? "Saved to library!"
+              : activeBriefId
+                ? "Save changes"
+                : "Save to library"}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowLibrary(true)}

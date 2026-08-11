@@ -18,7 +18,8 @@ export function SaveControls() {
   const setShowLibrary = useBriefStore((s) => s.setShowLibrary);
   const hydrated = useBriefStore((s) => s.hydrated);
 
-  const { cloudEnabled, user, refreshCloudLibrary } = useAuth();
+  const { cloudEnabled, user, canEdit, isViewer, refreshCloudLibrary } =
+    useAuth();
 
   const [justSaved, setJustSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -27,12 +28,18 @@ export function SaveControls() {
   const active = library.find((b) => b.id === activeBriefId);
 
   const handleSave = async () => {
+    if (!canEdit) {
+      window.alert(
+        "Your account is view-only. Ask an admin to change your role to editor if you need to save."
+      );
+      return;
+    }
+
     setError(null);
     const name =
       active?.name ||
       defaultBriefName(brief.promoName, brief.projectLead);
 
-    // Always keep a local copy
     saveToLibrary(name);
 
     if (!cloudEnabled || !user) {
@@ -44,7 +51,6 @@ export function SaveControls() {
     setSaving(true);
     try {
       const saved = await upsertCloudBrief({
-        // Use current active id if any (local + cloud share the same UUID)
         id: activeBriefId,
         name,
         brief,
@@ -58,7 +64,6 @@ export function SaveControls() {
       const msg = e instanceof Error ? e.message : "Cloud save failed";
       console.error("Cloud save failed:", e);
       setError(msg);
-      // Also surface full message so it isn't truncated
       window.alert(`Cloud save failed:\n\n${msg}`);
     } finally {
       setSaving(false);
@@ -69,6 +74,12 @@ export function SaveControls() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {isViewer && (
+        <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800">
+          View only
+        </span>
+      )}
+
       {active ? (
         <span className="hidden md:inline-flex max-w-[200px] items-center gap-1.5 text-xs text-stone-500 truncate">
           <span
@@ -92,26 +103,33 @@ export function SaveControls() {
       ) : (
         <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-stone-400">
           <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
-          Unsaved draft
+          {isViewer ? "Browsing" : "Unsaved draft"}
         </span>
       )}
 
       <button
         type="button"
         onClick={() => void handleSave()}
-        disabled={saving}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark disabled:opacity-60"
+        disabled={saving || !canEdit}
+        title={
+          !canEdit
+            ? "Viewers cannot save. Ask an admin for editor access."
+            : undefined
+        }
+        className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving
-          ? "Saving…"
-          : justSaved
-            ? "Saved to cloud!"
-            : activeBriefId
-              ? isDirty
-                ? "Save changes"
-                : "Saved"
-              : "Save brief"}
+        {!canEdit
+          ? "View only"
+          : saving
+            ? "Saving…"
+            : justSaved
+              ? "Saved to cloud!"
+              : activeBriefId
+                ? isDirty
+                  ? "Save changes"
+                  : "Saved"
+                : "Save brief"}
       </button>
 
       <button
@@ -132,7 +150,10 @@ export function SaveControls() {
       </button>
 
       {error && (
-        <span className="text-[11px] text-red-600 max-w-[200px] truncate" title={error}>
+        <span
+          className="text-[11px] text-red-600 max-w-[200px] truncate"
+          title={error}
+        >
           {error}
         </span>
       )}

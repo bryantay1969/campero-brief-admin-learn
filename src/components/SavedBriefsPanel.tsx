@@ -42,7 +42,8 @@ export function SavedBriefsPanel() {
   const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
   const newBrief = useBriefStore((s) => s.newBrief);
   const importIntoLibrary = useBriefStore((s) => s.importIntoLibrary);
-  const { cloudEnabled, user, refreshCloudLibrary } = useAuth();
+  const { cloudEnabled, user, canEdit, isViewer, canAdmin, refreshCloudLibrary } =
+    useAuth();
 
   const [query, setQuery] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -89,6 +90,10 @@ export function SavedBriefsPanel() {
   };
 
   const handleSave = async () => {
+    if (!canEdit) {
+      flash("View only — you cannot save briefs");
+      return;
+    }
     const name =
       saveName.trim() ||
       activeRecord?.name ||
@@ -116,6 +121,10 @@ export function SavedBriefsPanel() {
   };
 
   const handleSaveAs = async () => {
+    if (!canEdit) {
+      flash("View only — you cannot save briefs");
+      return;
+    }
     const name =
       saveName.trim() ||
       defaultBriefName(brief.promoName, brief.projectLead);
@@ -142,6 +151,14 @@ export function SavedBriefsPanel() {
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (!canEdit && !canAdmin) {
+      flash("View only — you cannot delete briefs");
+      return;
+    }
+    if (!canAdmin) {
+      flash("Only admins can delete shared briefs");
+      return;
+    }
     if (!window.confirm(`Delete “${name}” from your library? This cannot be undone.`)) {
       return;
     }
@@ -164,6 +181,12 @@ export function SavedBriefsPanel() {
   };
 
   const commitRename = async () => {
+    if (!canEdit) {
+      flash("View only — you cannot rename briefs");
+      setRenamingId(null);
+      setRenameValue("");
+      return;
+    }
     if (renamingId && renameValue.trim()) {
       renameInLibrary(renamingId, renameValue);
       if (cloudEnabled && user) {
@@ -229,8 +252,8 @@ export function SavedBriefsPanel() {
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
                 {cloudEnabled
-                  ? `Cloud library (Supabase) · ${library.length} saved`
-                  : `This browser only · ${library.length} saved · Log in to sync`}
+                  ? `Cloud library · ${library.length} saved${isViewer ? " · view only" : ""}`
+                  : `This browser only · ${library.length} saved`}
               </p>
             </div>
             <button
@@ -305,37 +328,45 @@ export function SavedBriefsPanel() {
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleSave}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
-              >
-                <Save className="h-3.5 w-3.5" />
-                {activeBriefId ? "Save changes" : "Save to library"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSaveName(
-                    activeRecord
-                      ? `${activeRecord.name} (copy)`
-                      : defaultBriefName(brief.promoName, brief.projectLead)
-                  );
-                  setShowSaveAs(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-orange-50"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Save as…
-              </button>
-              <button
-                type="button"
-                onClick={handleNew}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                New brief
-              </button>
+              {canEdit ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleSave()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {activeBriefId ? "Save changes" : "Save to library"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSaveName(
+                        activeRecord
+                          ? `${activeRecord.name} (copy)`
+                          : defaultBriefName(brief.promoName, brief.projectLead)
+                      );
+                      setShowSaveAs(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-orange-50"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Save as…
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNew}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    New brief
+                  </button>
+                </>
+              ) : (
+                <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  View only — open briefs below; you cannot save or delete.
+                </p>
+              )}
             </div>
           )}
 

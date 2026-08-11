@@ -12,6 +12,11 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabase, hasSupabaseConfig } from "@/lib/supabase/client";
 import { fetchCloudBriefs } from "@/lib/supabase/briefsApi";
+import {
+  fetchMyProfile,
+  type ProfileRow,
+  type UserRole,
+} from "@/lib/supabase/adminApi";
 import { useBriefStore } from "@/store/briefStore";
 
 type AuthContextValue = {
@@ -19,8 +24,18 @@ type AuthContextValue = {
   loading: boolean;
   session: Session | null;
   user: User | null;
+  profile: ProfileRow | null;
+  role: UserRole | null;
+  /** Logged in and can use cloud library list */
   cloudEnabled: boolean;
+  /** Can create/update shared briefs (admin + editor) */
+  canEdit: boolean;
+  /** Admin panel access */
+  canAdmin: boolean;
+  /** View-only account */
+  isViewer: boolean;
   refreshCloudLibrary: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -32,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = hasSupabaseConfig();
   const [loading, setLoading] = useState(configured);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const setLibrary = useBriefStore((s) => s.setCloudLibrary);
 
   const refreshCloudLibrary = useCallback(async () => {
@@ -44,6 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [configured, setLibrary]);
 
+  const refreshProfile = useCallback(async () => {
+    if (!configured) {
+      setProfile(null);
+      return;
+    }
+    try {
+      const p = await fetchMyProfile();
+      setProfile(p);
+    } catch (e) {
+      console.warn("Could not load profile:", e);
+      setProfile(null);
+    }
+  }, [configured]);
+
   useEffect(() => {
     if (!configured) {
       setLoading(false);
@@ -53,13 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       setSession(data.session);
-      setLoading(false);
       if (data.session) {
-        void refreshCloudLibrary();
+        await refreshProfile();
+        await refreshCloudLibrary();
+      } else {
+        setProfile(null);
       }
+      setLoading(false);
     });
 
     const {
@@ -67,7 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
       if (next) {
+        void refreshProfile();
         void refreshCloudLibrary();
+      } else {
+        setProfile(null);
       }
     });
 
@@ -75,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [configured, refreshCloudLibrary]);
+  }, [configured, refreshCloudLibrary, refreshProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
@@ -101,7 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await getSupabase().auth.signOut();
     setSession(null);
+    setProfile(null);
   }, []);
+
+  const role = profile?.role ?? null;
+  const canEdit = role === "admin" || role === "editor";
+  const canAdmin = role === "admin";
+  const isViewer = role === "viewer";
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -109,8 +151,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       session,
       user: session?.user ?? null,
+      profile,
+      role,
       cloudEnabled: configured && !!session?.user,
+      canEdit,
+      canAdmin,
+      isViewer,
       refreshCloudLibrary,
+      refreshProfile,
       signIn,
       signUp,
       signOut,
@@ -119,7 +167,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured,
       loading,
       session,
+      profile,
+      role,
+      canEdit,
+      canAdmin,
+      isViewer,
       refreshCloudLibrary,
+      refreshProfile,
       signIn,
       signUp,
       signOut,

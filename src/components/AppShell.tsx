@@ -18,6 +18,7 @@ import { ReviewGenerate } from "@/components/sections/ReviewGenerate";
 import type { SectionId } from "@/lib/types";
 import { SECTIONS } from "@/lib/brandGuidelines";
 import { AuthBar } from "@/components/auth/AuthBar";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   ChevronLeft,
   ChevronRight,
@@ -57,6 +58,7 @@ export function AppShell() {
   const clearForm = useBriefStore((s) => s.clearForm);
   const hydrated = useBriefStore((s) => s.hydrated);
   const isDirty = useBriefStore((s) => s.isDirty);
+  const { isViewer, canEdit } = useAuth();
 
   useEffect(() => {
     // Always unlock the UI. Persist rehydration is best-effort; never block tabs.
@@ -161,6 +163,16 @@ export function AppShell() {
 
       <FormNav />
 
+      {isViewer && (
+        <div className="border-b border-amber-200 bg-amber-50">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2 text-sm text-amber-900">
+            <strong>View only:</strong> you can open briefs and export PDF, but
+            you cannot save changes to the shared library. Ask an admin for{" "}
+            <strong>editor</strong> access if you need to edit.
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
         {/* Always show the form; draft rehydration must never block the UI */}
         <SectionBody id={activeSection} />
@@ -199,10 +211,10 @@ export function AppShell() {
 
       <footer className="border-t border-orange-100 bg-white py-6 mt-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 text-center text-xs text-stone-400">
-          Campero Promo Brief Builder · Working draft auto-saves · Use{" "}
-          <strong className="font-semibold text-stone-500">Save brief</strong>{" "}
-          to keep named versions in this browser · For internal marketing &
-          agency partner use
+          Campero Promo Brief Builder · Shared library via Supabase ·{" "}
+          {canEdit
+            ? "Editors and admins can save"
+            : "Viewers can browse and export only"}
         </div>
       </footer>
 
