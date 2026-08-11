@@ -105,18 +105,22 @@ function LegalAdminPanel() {
   };
 
   const onDelete = async (row: LegalTemplateRow) => {
-    if (
-      !window.confirm(
-        `Delete template “${row.label}”? Briefs that already used this text keep their saved legal block.`
-      )
-    ) {
-      return;
-    }
+    const ok = window.confirm(
+      [
+        `Delete template “${row.label}” for EVERYONE?`,
+        "",
+        "This removes the chip from the Legal tab for all users.",
+        "It cannot be undone from this screen.",
+        "",
+        "Briefs that already saved this text keep their own copy. New briefs will no longer see this template.",
+      ].join("\n")
+    );
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
       await deleteLegalTemplate(row.id);
-      flash(`Deleted “${row.label}”`);
+      flash(`Deleted “${row.label}” for everyone`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -421,7 +425,7 @@ function LegalAdminPanel() {
                         className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
                       >
                         <Trash2 className="h-3 w-3" />
-                        Delete
+                        Delete for everyone
                       </button>
                     </div>
                   </div>

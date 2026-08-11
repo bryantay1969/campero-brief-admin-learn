@@ -16,12 +16,20 @@ import {
 } from "@/lib/legalTemplates";
 import {
   createLegalTemplate,
+  deleteLegalTemplate,
   fetchLegalTemplatesForForm,
   saveSharedLegalTemplate,
 } from "@/lib/supabase/legalTemplatesApi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { cn } from "@/lib/utils";
-import { ExternalLink, Pencil, Plus, RotateCcw, Save } from "lucide-react";
+import {
+  ExternalLink,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+} from "lucide-react";
 
 export function LegalSection() {
   const brief = useBriefStore((s) => s.brief);
@@ -250,6 +258,55 @@ export function LegalSection() {
     }
   };
 
+  const deleteSharedTemplate = async () => {
+    if (!canAdmin || !selectedTemplate) return;
+
+    if (!selectedTemplate.dbId) {
+      window.alert(
+        "This template isn’t in the cloud library yet, so there’s nothing global to delete. Save it for everyone first, or manage templates under Admin → Legal."
+      );
+      return;
+    }
+
+    const label = selectedTemplate.label;
+    const ok = window.confirm(
+      [
+        `Delete template “${label}” for EVERYONE?`,
+        "",
+        "This removes the chip from the Legal tab for all users.",
+        "It cannot be undone from this screen.",
+        "",
+        "Briefs that already saved this text keep their own copy. New briefs will no longer see this template.",
+      ].join("\n")
+    );
+    if (!ok) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      await deleteLegalTemplate(selectedTemplate.dbId);
+      await reloadTemplates();
+      // Keep this brief’s legal text; mark as custom so it isn’t tied to a missing chip
+      if (legal.templateId === selectedTemplate.slug) {
+        patch("legal", {
+          ...legal,
+          templateId: "custom",
+          legalText: legal.legalText,
+        });
+      }
+      setIsEditing(false);
+      setMessage(
+        `Deleted “${label}” for everyone. The chip is gone from the shared library.`
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not delete shared template"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const copyright = getCopyrightLine(
     legal.copyrightVariant,
     legal.copyrightYear
@@ -339,6 +396,20 @@ export function LegalSection() {
             >
               <Plus className="h-3.5 w-3.5" />
               Add template for everyone
+            </button>
+            <button
+              type="button"
+              disabled={saving || !selectedTemplate}
+              onClick={() => void deleteSharedTemplate()}
+              title={
+                selectedTemplate
+                  ? `Delete “${selectedTemplate.label}” for everyone`
+                  : "Select a template chip first"
+              }
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete for everyone
             </button>
             <Link
               href="/admin/legal/"
