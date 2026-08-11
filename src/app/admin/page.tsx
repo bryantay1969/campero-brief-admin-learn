@@ -13,6 +13,7 @@ import {
 } from "@/lib/supabase/adminClientApi";
 import { format } from "date-fns";
 import {
+  FileText,
   Pencil,
   Plus,
   RefreshCw,
@@ -216,6 +217,13 @@ function AdminPanel() {
               <Plus className="h-3.5 w-3.5" />
               Add user
             </button>
+            <Link
+              href="/admin/legal/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Legal templates
+            </Link>
             <Link
               href="/"
               className="inline-flex items-center rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white hover:bg-campero-orange-dark"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useBriefStore } from "@/store/briefStore";
 import {
   SectionCard,
@@ -7,27 +8,47 @@ import {
   TextArea,
 } from "@/components/ui/FormControls";
 import {
-  LEGAL_TEMPLATES,
+  BUILTIN_LEGAL_TEMPLATES,
   getCopyrightLine,
+  type LegalTemplateDef,
 } from "@/lib/legalTemplates";
-import type { LegalTemplateId } from "@/lib/types";
+import { fetchLegalTemplatesForForm } from "@/lib/supabase/legalTemplatesApi";
 import { cn } from "@/lib/utils";
-
-const TEMPLATE_IDS = Object.keys(LEGAL_TEMPLATES) as Exclude<
-  LegalTemplateId,
-  "custom"
->[];
 
 export function LegalSection() {
   const brief = useBriefStore((s) => s.brief);
   const patch = useBriefStore((s) => s.patch);
   const legal = brief.legal;
 
-  const applyTemplate = (id: Exclude<LegalTemplateId, "custom">) => {
+  const [templates, setTemplates] = useState<LegalTemplateDef[]>(
+    BUILTIN_LEGAL_TEMPLATES
+  );
+  const [source, setSource] = useState<"cloud" | "builtin">("builtin");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchLegalTemplatesForForm()
+      .then((list) => {
+        if (cancelled) return;
+        setTemplates(list);
+        const fromCloud = list.some((t) => t.dbId);
+        setSource(fromCloud ? "cloud" : "builtin");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const applyTemplate = (t: LegalTemplateDef) => {
     patch("legal", {
       ...legal,
-      templateId: id,
-      legalText: LEGAL_TEMPLATES[id].text,
+      templateId: t.slug,
+      legalText: t.text,
     });
   };
 
@@ -36,27 +57,40 @@ export function LegalSection() {
     legal.copyrightYear
   );
 
+  const bogo = templates.find(
+    (t) => t.slug === "bogoLoyalty" || t.id === "bogoLoyalty"
+  );
+
   return (
     <SectionCard id="section-legal" title="Legal">
       {brief.loyaltyOnly === "yes" && (
         <div className="rounded-lg border border-campero-orange/30 bg-orange-50 px-3 py-2 text-sm text-stone-700">
           <strong className="text-campero-orange">Loyalty only:</strong>{" "}
-          BOGO/Loyalty legal language is recommended. Confirm redemption
-          notes match Rewards drop instructions.
+          BOGO/Loyalty legal language is recommended
+          {bogo ? ` (“${bogo.label}”).` : "."} Confirm redemption notes match
+          Rewards drop instructions.
         </div>
       )}
 
       <div>
-        <FieldLabel>Quick-select legal templates</FieldLabel>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <FieldLabel>Quick-select legal templates</FieldLabel>
+          <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400">
+            {loading
+              ? "Loading…"
+              : source === "cloud"
+                ? "From admin / Supabase"
+                : "Built-in defaults"}
+          </span>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {TEMPLATE_IDS.map((id) => {
-            const t = LEGAL_TEMPLATES[id];
-            const active = legal.templateId === id;
+          {templates.map((t) => {
+            const active = legal.templateId === t.slug;
             return (
               <button
-                key={id}
+                key={t.slug}
                 type="button"
-                onClick={() => applyTemplate(id)}
+                onClick={() => applyTemplate(t)}
                 title={t.description}
                 className={cn(
                   "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
@@ -70,6 +104,12 @@ export function LegalSection() {
               </button>
             );
           })}
+          {templates.length === 0 && !loading && (
+            <p className="text-sm text-stone-400">
+              No active templates. An admin can add them under Admin → Legal
+              templates.
+            </p>
+          )}
         </div>
       </div>
 

@@ -161,13 +161,8 @@ export interface PhysicalAsset {
   notes: string;
 }
 
-export type LegalTemplateId =
-  | "standard"
-  | "bogoLoyalty"
-  | "inStoreOnly"
-  | "ews"
-  | "menuItemLimit"
-  | "custom";
+/** Slug of a legal template, or "custom" when free-edited. */
+export type LegalTemplateId = string;
 
 export interface LegalSection {
   templateId: LegalTemplateId;

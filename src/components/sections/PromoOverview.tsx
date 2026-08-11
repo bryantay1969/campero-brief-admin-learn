@@ -8,7 +8,10 @@ import {
   TextArea,
   ToggleYesNo,
 } from "@/components/ui/FormControls";
-import { LEGAL_TEMPLATES } from "@/lib/legalTemplates";
+import {
+  BUILTIN_LEGAL_TEMPLATES,
+  findTemplateText,
+} from "@/lib/legalTemplates";
 
 export function PromoOverview() {
   const brief = useBriefStore((s) => s.brief);
@@ -17,12 +20,15 @@ export function PromoOverview() {
 
   const handleLoyaltyChange = (v: "yes" | "no") => {
     if (v === "yes") {
+      const bogoText =
+        findTemplateText(BUILTIN_LEGAL_TEMPLATES, "bogoLoyalty") ||
+        brief.legal.legalText;
       updateBrief({
         loyaltyOnly: v,
         legal: {
           ...brief.legal,
           templateId: "bogoLoyalty",
-          legalText: LEGAL_TEMPLATES.bogoLoyalty.text,
+          legalText: bogoText,
         },
       });
     } else {
