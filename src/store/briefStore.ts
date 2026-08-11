@@ -166,7 +166,7 @@ function sortLibrary(library: SavedBriefRecord[]): SavedBriefRecord[] {
 export const useBriefStore = create<BriefState>()(
   persist(
     (set, get) => ({
-      brief: createSampleBrief(),
+      brief: createEmptyBrief(),
       library: [],
       activeBriefId: null,
       isDirty: false,
@@ -226,6 +226,7 @@ export const useBriefStore = create<BriefState>()(
           activeSection: "overview",
           showPreview: false,
           showLibrary: false,
+          showGuidelines: false,
         }),
 
       saveToLibrary: (name) => {

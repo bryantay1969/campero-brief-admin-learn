@@ -148,7 +148,7 @@ export function createEmptyBrief(): PromoBrief {
       blogPost: {
         enabled: false,
         notes: "",
-        imageSpecs: "Link to specs example files",
+        imageSpecs: "",
       },
       pressRelease: {
         enabled: false,
@@ -159,9 +159,10 @@ export function createEmptyBrief(): PromoBrief {
 
     physicalAssets: createPhysicalAssets(),
 
+    // Truly empty — no template text until the user picks one on Legal
     legal: {
-      templateId: "standard",
-      legalText: LEGAL_TEMPLATES.standard.text,
+      templateId: "",
+      legalText: "",
       copyrightVariant: "digital",
       copyrightYear: year,
     },

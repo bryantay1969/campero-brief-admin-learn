@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 type LeftToolbarProps = {
-  saveStatus: "idle" | "pending" | "saving" | "saved" | "error";
+  saveStatus: "idle" | "saving" | "saved" | "error";
   saveError: string | null;
   onRetrySave: () => void | Promise<void>;
   onHide?: () => void;
@@ -99,13 +99,12 @@ export function LeftToolbar({
   const saveLabel = (() => {
     if (!canEdit) return "View only";
     if (saveStatus === "saving") return "Saving…";
-    if (saveStatus === "pending") return "Saving soon…";
     if (saveStatus === "error") return "Save failed";
     if (saveStatus === "saved")
       return cloudEnabled ? "Saved to cloud" : "Saved";
-    if (isDirty) return "Unsaved changes";
+    if (isDirty) return "Unsaved · saves on next tab";
     if (activeBriefId) return "Saved";
-    return "New draft";
+    return "New empty draft";
   })();
 
   const navBtn =
@@ -160,9 +159,7 @@ export function LeftToolbar({
                 "h-1.5 w-1.5 rounded-full shrink-0",
                 saveStatus === "error"
                   ? "bg-red-500"
-                  : saveStatus === "saving" ||
-                      saveStatus === "pending" ||
-                      isDirty
+                  : saveStatus === "saving" || isDirty
                     ? "bg-amber-500"
                     : "bg-emerald-500"
               )}
@@ -172,12 +169,12 @@ export function LeftToolbar({
                 "font-medium",
                 saveStatus === "error"
                   ? "text-red-700"
-                  : saveStatus === "saving" || saveStatus === "pending"
+                  : saveStatus === "saving" || isDirty
                     ? "text-amber-800"
                     : "text-stone-500"
               )}
             >
-              {(saveStatus === "saving" || saveStatus === "pending") && (
+              {saveStatus === "saving" && (
                 <Loader2 className="inline h-3 w-3 animate-spin mr-1" />
               )}
               {saveLabel}

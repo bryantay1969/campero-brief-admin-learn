@@ -46,7 +46,7 @@ export function ReviewGenerate() {
   const handleCopyLink = async () => {
     if (!activeBriefId) {
       window.alert(
-        "This brief is still saving. Wait a moment for auto-save, then try again."
+        "This brief isn’t in the library yet. Go to the next tab (or another section) to save, then copy the link."
       );
       return;
     }
@@ -103,8 +103,8 @@ export function ReviewGenerate() {
 
       {canEdit && (
         <p className="text-xs text-stone-500">
-          Changes auto-save as you work (see status in the top toolbar). This
-          page shows a live preview of the brief.
+          Briefs save when you move to another section tab. This page shows a
+          live preview.
         </p>
       )}
 
@@ -129,7 +129,7 @@ export function ReviewGenerate() {
           title={
             activeBriefId
               ? briefShareUrl(activeBriefId)
-              : "Available after auto-save creates a library entry"
+              : "Available after the brief is saved (change section tab)"
           }
         >
           {copyStatus === "ok" ? (

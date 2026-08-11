@@ -278,7 +278,7 @@ export function AppShell() {
                 <div className="px-4 sm:px-6 text-center text-xs text-stone-400">
                   Campero Promo Brief Builder ·{" "}
                   {canEdit
-                    ? "Auto-saves as you work"
+                    ? "Saves when you change section tabs"
                     : "Viewers can browse and export only"}
                 </div>
               </footer>

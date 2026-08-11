@@ -6,18 +6,11 @@ import { defaultBriefName } from "@/lib/briefIds";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { upsertCloudBrief } from "@/lib/supabase/briefsApi";
 
-const AUTOSAVE_MS = 1200;
-
-export type AutoSaveStatus =
-  | "idle"
-  | "pending"
-  | "saving"
-  | "saved"
-  | "error";
+export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 
 /**
- * Headless auto-save engine. Renders nothing; reports status via children render prop
- * or can be used only for side effects with onStatusChange.
+ * Saves only when the user changes section (advances/jumps tabs).
+ * No debounced typing saves.
  */
 export function AutoSaveEngine({
   children,
@@ -28,7 +21,6 @@ export function AutoSaveEngine({
     runSave: () => Promise<void>;
   }) => ReactNode;
 }) {
-  const brief = useBriefStore((s) => s.brief);
   const isDirty = useBriefStore((s) => s.isDirty);
   const activeSection = useBriefStore((s) => s.activeSection);
   const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
@@ -40,6 +32,7 @@ export function AutoSaveEngine({
   const [error, setError] = useState<string | null>(null);
   const savingRef = useRef(false);
   const prevSectionRef = useRef(activeSection);
+  const hydratedRef = useRef(false);
 
   const runSave = useCallback(async () => {
     if (!canEdit || !hydrated || savingRef.current) return;
@@ -82,8 +75,8 @@ export function AutoSaveEngine({
         setStatus((s) => (s === "saved" ? "idle" : s));
       }, 2000);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Auto-save failed";
-      console.error("Auto-save failed:", e);
+      const msg = e instanceof Error ? e.message : "Save failed";
+      console.error("Tab save failed:", e);
       setError(msg);
       setStatus("error");
     } finally {
@@ -98,44 +91,32 @@ export function AutoSaveEngine({
     refreshCloudLibrary,
   ]);
 
+  // Save only when the active section changes (next/prev or section chip)
   useEffect(() => {
-    if (!hydrated || !canEdit || !isDirty) {
-      if (!isDirty && status === "pending") setStatus("idle");
+    if (!hydrated) return;
+
+    // Skip the first run after mount/hydrate so we don't save on load
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      prevSectionRef.current = activeSection;
       return;
     }
-    setStatus("pending");
-    const t = window.setTimeout(() => {
-      void runSave();
-    }, AUTOSAVE_MS);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDirty, brief, hydrated, canEdit, runSave]);
 
-  useEffect(() => {
     if (prevSectionRef.current === activeSection) return;
     prevSectionRef.current = activeSection;
-    if (!hydrated || !canEdit) return;
+
+    if (!canEdit) return;
     if (useBriefStore.getState().isDirty) {
       void runSave();
     }
   }, [activeSection, hydrated, canEdit, runSave]);
 
+  // Reflect unsaved state without auto-saving
   useEffect(() => {
-    const onHide = () => {
-      if (useBriefStore.getState().isDirty && canEdit) {
-        void runSave();
-      }
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") onHide();
-    };
-    window.addEventListener("pagehide", onHide);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.removeEventListener("pagehide", onHide);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [canEdit, runSave]);
+    if (!hydrated || !canEdit) return;
+    if (status === "saving" || status === "error") return;
+    if (isDirty && status === "saved") setStatus("idle");
+  }, [isDirty, hydrated, canEdit, status]);
 
   return <>{children({ status, error, runSave })}</>;
 }
