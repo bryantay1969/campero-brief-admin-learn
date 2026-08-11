@@ -143,6 +143,54 @@ export async function updateLegalTemplate(
   return data as LegalTemplateRow;
 }
 
+/**
+ * Save a global shared template by slug.
+ * Updates the cloud row if it exists; otherwise creates it (e.g. first save of a built-in).
+ */
+export async function saveSharedLegalTemplate(input: {
+  slug: string;
+  label: string;
+  description?: string;
+  body: string;
+  sort_order?: number;
+}): Promise<LegalTemplateRow> {
+  const supabase = getSupabase();
+  const slug = input.slug
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!slug) throw new Error("Slug is required");
+  if (!input.label.trim()) throw new Error("Label is required");
+  if (!input.body.trim()) throw new Error("Legal text is required");
+
+  const { data: existing, error: findError } = await supabase
+    .from("legal_templates")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (findError) throw new Error(formatError(findError));
+
+  if (existing?.id) {
+    return updateLegalTemplate(existing.id, {
+      label: input.label,
+      description: input.description ?? "",
+      body: input.body,
+      sort_order: input.sort_order,
+      is_active: true,
+    });
+  }
+
+  return createLegalTemplate({
+    slug,
+    label: input.label,
+    description: input.description ?? "",
+    body: input.body,
+    sort_order: input.sort_order ?? 100,
+    is_active: true,
+  });
+}
+
 export async function deleteLegalTemplate(id: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("legal_templates").delete().eq("id", id);

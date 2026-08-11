@@ -176,13 +176,19 @@ function LegalAdminPanel() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm text-sm text-stone-600">
-          <p>
-            Templates here appear as quick-select chips on the{" "}
-            <strong>Legal</strong> tab for every user. Changes apply the next
-            time someone opens that tab (no code deploy needed).
+        <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm text-sm text-violet-950">
+          <p className="font-semibold">
+            Global content config — not per-brief.
           </p>
-          <p className="mt-2 text-xs text-stone-400">
+          <p className="mt-1 text-violet-900/90">
+            Templates here appear as quick-select chips on the{" "}
+            <strong>Legal</strong> tab for <strong>every user</strong>. Edits
+            and new templates apply to the shared library immediately (no code
+            deploy). New briefs that pick a chip get the latest text; briefs
+            already saved keep their own legal copy until someone re-selects the
+            chip.
+          </p>
+          <p className="mt-2 text-xs text-violet-800/80">
             <strong>Slug</strong> is a short id (e.g. <code>bogoLoyalty</code>)
             used by the form. Keep stable if you already rely on it.
           </p>
@@ -230,8 +236,8 @@ function LegalAdminPanel() {
                     </h3>
                     <p className="text-xs text-stone-500 mt-1">
                       {editingId
-                        ? "Changes apply for everyone on the Legal tab after you save."
-                        : "This will appear as a quick-select chip on the Legal tab."}
+                        ? "Global edit — everyone gets this on the Legal tab after save. New briefs that pick this chip use the new text."
+                        : "Creates a new shared chip available to everyone on the Legal tab."}
                     </p>
                   </div>
                   <button
@@ -341,8 +347,8 @@ function LegalAdminPanel() {
                   {busy
                     ? "Saving…"
                     : editingId
-                      ? "Save template"
-                      : "Create template"}
+                      ? "Save global template"
+                      : "Create for everyone"}
                 </button>
                 <button
                   type="button"
