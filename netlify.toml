@@ -1,9 +1,12 @@
-# Learning app with API routes (user admin) needs the Next.js runtime.
-# Set env vars in Netlify: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+# Learning app (Next.js + API routes + Supabase)
+# Env vars (Netlify UI): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
 # SUPABASE_SERVICE_ROLE_KEY
 
 [build]
   command = "npm run build"
+  # Required: must NOT equal the site base directory.
+  # @netlify/plugin-nextjs expects the Next build output folder (.next).
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
