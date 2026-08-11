@@ -131,7 +131,15 @@ function ITAdminPanel() {
       closeForm();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      const msg = err instanceof Error ? err.message : "Save failed";
+      setError(
+        msg.includes("link_href") ||
+          msg.includes("link_label") ||
+          msg.includes("priority_default") ||
+          msg.includes("PGRST204")
+          ? `${msg}\n\nFix: In Supabase → SQL Editor, run the file supabase/catalog-fields-align.sql, then try Save again.`
+          : msg
+      );
     } finally {
       setBusy(false);
     }

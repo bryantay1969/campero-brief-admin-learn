@@ -8,11 +8,17 @@ create table if not exists public.it_asset_catalog (
   specs text not null default '',
   notes_default text not null default '',
   notes_placeholder text not null default '',
+  priority_default text not null default '',
+  link_label text not null default '',
+  link_href text not null default '',
   sort_order int not null default 0,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- If this table already existed before priority/link fields, also run:
+--   supabase/catalog-fields-align.sql
 
 create index if not exists it_asset_catalog_sort_idx
   on public.it_asset_catalog (sort_order asc, title asc);
