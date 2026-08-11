@@ -1,11 +1,12 @@
-# Static export deploy (output: "export" → out/)
-# Works for Git-connected Netlify builds and matches drag-and-drop of `out/`.
+# Learning app with API routes (user admin) needs the Next.js runtime.
+# Set env vars in Netlify: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+# SUPABASE_SERVICE_ROLE_KEY
 
 [build]
   command = "npm run build"
-  publish = "out"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# No @netlify/plugin-nextjs — this is a plain static site from `next export` / output: "export"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

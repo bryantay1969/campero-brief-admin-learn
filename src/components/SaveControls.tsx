@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useBriefStore } from "@/store/briefStore";
 import { defaultBriefName } from "@/lib/briefIds";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { upsertCloudBrief } from "@/lib/supabase/briefsApi";
 import { FolderOpen, Save } from "lucide-react";
 import { format } from "date-fns";
 
@@ -12,21 +14,55 @@ export function SaveControls() {
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
   const isDirty = useBriefStore((s) => s.isDirty);
   const saveToLibrary = useBriefStore((s) => s.saveToLibrary);
+  const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
   const setShowLibrary = useBriefStore((s) => s.setShowLibrary);
   const hydrated = useBriefStore((s) => s.hydrated);
 
+  const { cloudEnabled, user, refreshCloudLibrary } = useAuth();
+
   const [justSaved, setJustSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const active = library.find((b) => b.id === activeBriefId);
 
-  const handleSave = () => {
-    const saved = saveToLibrary(
+  const handleSave = async () => {
+    setError(null);
+    const name =
       active?.name ||
-        defaultBriefName(brief.promoName, brief.projectLead)
-    );
-    setJustSaved(true);
-    window.setTimeout(() => setJustSaved(false), 1800);
-    return saved;
+      defaultBriefName(brief.promoName, brief.projectLead);
+
+    // Always keep a local copy
+    saveToLibrary(name);
+
+    if (!cloudEnabled || !user) {
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 1800);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const saved = await upsertCloudBrief({
+        // Use current active id if any (local + cloud share the same UUID)
+        id: activeBriefId,
+        name,
+        brief,
+        userId: user.id,
+      });
+      applyCloudSave(saved);
+      await refreshCloudLibrary();
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 1800);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Cloud save failed";
+      console.error("Cloud save failed:", e);
+      setError(msg);
+      // Also surface full message so it isn't truncated
+      window.alert(`Cloud save failed:\n\n${msg}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!hydrated) return null;
@@ -62,22 +98,28 @@ export function SaveControls() {
 
       <button
         type="button"
-        onClick={handleSave}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
+        onClick={() => void handleSave()}
+        disabled={saving}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {justSaved
-          ? "Saved!"
-          : activeBriefId
-            ? isDirty
-              ? "Save changes"
-              : "Saved"
-            : "Save brief"}
+        {saving
+          ? "Saving…"
+          : justSaved
+            ? "Saved to cloud!"
+            : activeBriefId
+              ? isDirty
+                ? "Save changes"
+                : "Saved"
+              : "Save brief"}
       </button>
 
       <button
         type="button"
-        onClick={() => setShowLibrary(true)}
+        onClick={() => {
+          setShowLibrary(true);
+          if (cloudEnabled) void refreshCloudLibrary();
+        }}
         className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:border-campero-orange/40 hover:bg-orange-50"
       >
         <FolderOpen className="h-3.5 w-3.5" />
@@ -88,6 +130,12 @@ export function SaveControls() {
           </span>
         )}
       </button>
+
+      {error && (
+        <span className="text-[11px] text-red-600 max-w-[200px] truncate" title={error}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }

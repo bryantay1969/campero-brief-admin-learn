@@ -143,6 +143,11 @@ interface BriefState {
     name?: string;
     brief: PromoBrief;
   }) => SavedBriefRecord;
+
+  /** Replace library from Supabase cloud list. */
+  setCloudLibrary: (records: SavedBriefRecord[]) => void;
+  /** Apply a cloud-saved record as active library entry. */
+  applyCloudSave: (record: SavedBriefRecord) => void;
 }
 
 function stampBrief(brief: PromoBrief): PromoBrief {
@@ -380,6 +385,37 @@ export const useBriefStore = create<BriefState>()(
         });
         return created;
       },
+
+      setCloudLibrary: (records) => {
+        set({
+          library: sortLibrary(
+            records.map((r) => ({
+              ...r,
+              brief: normalizeBrief(r.brief),
+            }))
+          ),
+        });
+      },
+
+      applyCloudSave: (record) => {
+        const stamped = stampBrief(record.brief);
+        const next: SavedBriefRecord = {
+          ...record,
+          brief: stamped,
+        };
+        const state = get();
+        const exists = state.library.some((b) => b.id === next.id);
+        set({
+          brief: stamped,
+          activeBriefId: next.id,
+          isDirty: false,
+          library: sortLibrary(
+            exists
+              ? state.library.map((b) => (b.id === next.id ? next : b))
+              : [next, ...state.library]
+          ),
+        });
+      },
     }),
     {
       name: "campero-promo-brief-store",
@@ -391,24 +427,31 @@ export const useBriefStore = create<BriefState>()(
         activeSection: state.activeSection,
       }),
       onRehydrateStorage: () => (state, error) => {
-        // Always mark hydrated — zustand leaves hasHydrated=false if merge throws
+        // Defer setState — calling useBriefStore during create() causes
+        // "Cannot access before initialization"
         if (error) {
           console.warn("Brief store rehydration failed:", error);
         }
-        try {
-          if (state) {
-            useBriefStore.setState({
-              brief: normalizeBrief(state.brief),
-              library: normalizeLibrary(state.library),
-              hydrated: true,
-            });
-          } else {
-            useBriefStore.setState({ hydrated: true });
+        queueMicrotask(() => {
+          try {
+            if (state) {
+              useBriefStore.setState({
+                brief: normalizeBrief(state.brief),
+                library: normalizeLibrary(state.library),
+                hydrated: true,
+              });
+            } else {
+              useBriefStore.setState({ hydrated: true });
+            }
+          } catch (e) {
+            console.warn("Brief store post-rehydrate normalize failed:", e);
+            try {
+              useBriefStore.setState({ hydrated: true });
+            } catch {
+              /* ignore */
+            }
           }
-        } catch (e) {
-          console.warn("Brief store post-rehydrate normalize failed:", e);
-          useBriefStore.setState({ hydrated: true });
-        }
+        });
       },
       merge: (persisted, current) => {
         try {
@@ -426,7 +469,7 @@ export const useBriefStore = create<BriefState>()(
                 : current.activeBriefId,
             isDirty: typeof p.isDirty === "boolean" ? p.isDirty : true,
             activeSection: p.activeSection || current.activeSection,
-            // Never persist-restore hydrated as true before client mount
+            // merge already normalizes; AppShell / onRehydrate marks ready
             hydrated: false,
           };
         } catch (e) {

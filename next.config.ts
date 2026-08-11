@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Static HTML export → `out/` folder for Netlify drag-and-drop (or publish: out)
-  output: "export",
-  // Recommended for static hosting of Next assets
+  // API routes need a real Next server (not static `output: "export"`).
+  // Local: npm run dev / npm run build && npm start
+  // Host: Netlify/Vercel with Next runtime + env vars
   images: {
     unoptimized: true,
   },
-  // Trailing slashes help static hosts resolve nested paths cleanly
-  trailingSlash: true,
 };
 
 export default nextConfig;

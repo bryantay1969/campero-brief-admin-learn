@@ -17,6 +17,7 @@ import { LegalSection } from "@/components/sections/LegalSection";
 import { ReviewGenerate } from "@/components/sections/ReviewGenerate";
 import type { SectionId } from "@/lib/types";
 import { SECTIONS } from "@/lib/brandGuidelines";
+import { AuthBar } from "@/components/auth/AuthBar";
 import {
   ChevronLeft,
   ChevronRight,
@@ -131,12 +132,13 @@ export function AppShell() {
                 Campero Promo Brief Builder
               </h1>
               <p className="text-xs text-stone-500">
-                Marketing Promo Checklist · Pollo Campero template
+                Shared library · login required
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SaveControls />
+            <AuthBar />
             <button
               type="button"
               onClick={handleLoadSample}

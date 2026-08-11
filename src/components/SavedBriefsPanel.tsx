@@ -5,6 +5,12 @@ import { useBriefStore } from "@/store/briefStore";
 import { formatDisplayDate } from "@/lib/utils";
 import { downloadBriefJson, parseImportFile } from "@/lib/briefExport";
 import { defaultBriefName } from "@/lib/briefIds";
+import { useAuth } from "@/components/auth/AuthProvider";
+import {
+  deleteCloudBrief,
+  renameCloudBrief,
+  upsertCloudBrief,
+} from "@/lib/supabase/briefsApi";
 import {
   Check,
   Copy,
@@ -33,8 +39,10 @@ export function SavedBriefsPanel() {
   const duplicateInLibrary = useBriefStore((s) => s.duplicateInLibrary);
   const saveToLibrary = useBriefStore((s) => s.saveToLibrary);
   const saveAsNew = useBriefStore((s) => s.saveAsNew);
+  const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
   const newBrief = useBriefStore((s) => s.newBrief);
   const importIntoLibrary = useBriefStore((s) => s.importIntoLibrary);
+  const { cloudEnabled, user, refreshCloudLibrary } = useAuth();
 
   const [query, setQuery] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -80,32 +88,73 @@ export function SavedBriefsPanel() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name =
       saveName.trim() ||
       activeRecord?.name ||
       defaultBriefName(brief.promoName, brief.projectLead);
-    const saved = saveToLibrary(name);
+    saveToLibrary(name);
     setSaveName("");
     setShowSaveAs(false);
-    flash(`Saved “${saved.name}”`);
+    if (cloudEnabled && user) {
+      try {
+        const saved = await upsertCloudBrief({
+          id: activeBriefId,
+          name,
+          brief,
+          userId: user.id,
+        });
+        applyCloudSave(saved);
+        await refreshCloudLibrary();
+        flash(`Saved to cloud “${saved.name}”`);
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "Cloud save failed");
+      }
+    } else {
+      flash(`Saved “${name}” (this browser only)`);
+    }
   };
 
-  const handleSaveAs = () => {
+  const handleSaveAs = async () => {
     const name =
       saveName.trim() ||
       defaultBriefName(brief.promoName, brief.projectLead);
-    const saved = saveAsNew(name);
+    saveAsNew(name);
     setSaveName("");
     setShowSaveAs(false);
-    flash(`Saved as “${saved.name}”`);
+    if (cloudEnabled && user) {
+      try {
+        const saved = await upsertCloudBrief({
+          id: null,
+          name,
+          brief,
+          userId: user.id,
+        });
+        applyCloudSave(saved);
+        await refreshCloudLibrary();
+        flash(`Saved as “${saved.name}” (cloud)`);
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "Cloud save failed");
+      }
+    } else {
+      flash(`Saved as “${name}” (this browser only)`);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Delete “${name}” from your library? This cannot be undone.`)) {
       return;
     }
     deleteFromLibrary(id);
+    if (cloudEnabled) {
+      try {
+        await deleteCloudBrief(id);
+        await refreshCloudLibrary();
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "Cloud delete failed");
+        return;
+      }
+    }
     flash("Brief deleted");
   };
 
@@ -114,9 +163,17 @@ export function SavedBriefsPanel() {
     setRenameValue(name);
   };
 
-  const commitRename = () => {
+  const commitRename = async () => {
     if (renamingId && renameValue.trim()) {
       renameInLibrary(renamingId, renameValue);
+      if (cloudEnabled && user) {
+        try {
+          await renameCloudBrief(renamingId, renameValue.trim(), user.id);
+          await refreshCloudLibrary();
+        } catch (e) {
+          flash(e instanceof Error ? e.message : "Cloud rename failed");
+        }
+      }
       flash("Renamed");
     }
     setRenamingId(null);
@@ -171,7 +228,9 @@ export function SavedBriefsPanel() {
                 Saved Briefs
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Stored in this browser · {library.length} saved
+                {cloudEnabled
+                  ? `Cloud library (Supabase) · ${library.length} saved`
+                  : `This browser only · ${library.length} saved · Log in to sync`}
               </p>
             </div>
             <button
