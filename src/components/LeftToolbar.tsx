@@ -62,7 +62,7 @@ export function LeftToolbar({
   const [newBriefFlash, setNewBriefFlash] = useState(false);
   const [newBriefBusy, setNewBriefBusy] = useState(false);
 
-  const handleNewBrief = async () => {
+  const handleNewBrief = () => {
     if (!canEdit) {
       window.alert("View only — you cannot create a new brief.");
       return;
@@ -75,27 +75,21 @@ export function LeftToolbar({
       !!brief.projectLead.trim() ||
       !!brief.locations.trim() ||
       brief.messagingBullets.some((b) => b.text.trim()) ||
-      !!brief.legal.legalText.trim();
+      !!brief.legal.legalText.trim() ||
+      isDirty;
 
-    if (isDirty && (hasOpenBrief || hasTypedContent)) {
+    if (hasOpenBrief || hasTypedContent) {
       const ok = window.confirm(
-        "Start a new empty brief?\n\n• Your current brief will be saved first (if it has content)\n• Then you’ll get a blank form\n• The old brief stays in My briefs"
+        [
+          "Start a new empty brief?",
+          "",
+          "WARNING: Content in the current brief will NOT be saved.",
+          "Unsaved edits on this form will be discarded.",
+          "",
+          "Briefs already saved in My briefs are kept.",
+        ].join("\n")
       );
       if (!ok) return;
-      setNewBriefBusy(true);
-      try {
-        await onRetrySave();
-      } catch {
-        // still allow new brief
-      }
-    } else if (hasOpenBrief || hasTypedContent) {
-      const ok = window.confirm(
-        "Start a new empty brief? The form will be cleared. Your saved briefs stay in My briefs."
-      );
-      if (!ok) {
-        setNewBriefBusy(false);
-        return;
-      }
     }
 
     setNewBriefBusy(true);
@@ -118,7 +112,14 @@ export function LeftToolbar({
   const handleClear = () => {
     if (
       window.confirm(
-        "Clear the form and start blank? Saved library briefs are not deleted."
+        [
+          "Clear brief?",
+          "",
+          "WARNING: This will erase all content in the current brief.",
+          "This cannot be undone for unsaved work.",
+          "",
+          "Other briefs in My briefs are not deleted.",
+        ].join("\n")
       )
     ) {
       clearForm();
@@ -239,7 +240,7 @@ export function LeftToolbar({
           <button
             type="button"
             disabled={newBriefBusy}
-            onClick={() => void handleNewBrief()}
+            onClick={handleNewBrief}
             className={cn(
               navBtn,
               newBriefFlash
@@ -317,7 +318,7 @@ export function LeftToolbar({
             )}
           >
             <Eraser className="h-3.5 w-3.5 shrink-0" />
-            Clear form
+            Clear brief
           </button>
         )}
 

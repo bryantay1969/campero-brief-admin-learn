@@ -217,9 +217,21 @@ export function SavedBriefsPanel() {
   };
 
   const handleNew = () => {
-    if (isDirty) {
+    const hasContent =
+      isDirty ||
+      !!brief.promoName.trim() ||
+      !!brief.projectLead.trim() ||
+      !!activeBriefId;
+    if (hasContent) {
       const ok = window.confirm(
-        "Start a new empty brief? Unsaved edits will be discarded from the form (saved library copies stay)."
+        [
+          "Start a new empty brief?",
+          "",
+          "WARNING: Content in the current brief will NOT be saved.",
+          "Unsaved edits on this form will be discarded.",
+          "",
+          "Briefs already saved in My briefs are kept.",
+        ].join("\n")
       );
       if (!ok) return;
     }

@@ -2,7 +2,7 @@
 
 import { BRAND_GUIDELINES } from "@/lib/brandGuidelines";
 import { useBriefStore } from "@/store/briefStore";
-import { BookOpen, X } from "lucide-react";
+import { X } from "lucide-react";
 
 function GuideBlock({
   title,
@@ -34,18 +34,8 @@ export function BrandGuidelinesPanel() {
   const show = useBriefStore((s) => s.showGuidelines);
   const setShow = useBriefStore((s) => s.setShowGuidelines);
 
-  if (!show) {
-    return (
-      <button
-        type="button"
-        onClick={() => setShow(true)}
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-stone-800 transition-colors"
-      >
-        <BookOpen className="h-4 w-4 text-campero-yellow" />
-        Brand Guidelines
-      </button>
-    );
-  }
+  // Floating bottom-right trigger removed — open from the left toolbar only.
+  if (!show) return null;
 
   return (
     <>
