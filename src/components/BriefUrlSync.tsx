@@ -37,8 +37,11 @@ function BriefUrlSyncInner() {
     if (!preferNewDraft) return;
 
     openedParamRef.current = null;
-    skipNextUrlWrite.current = true;
+    // Only skip the *next* URL write when we actually strip a param.
+    // If the URL is already clean, leave skip false so Open from library
+    // can write ?brief= immediately after preferNewDraft clears.
     if (briefParam) {
+      skipNextUrlWrite.current = true;
       router.replace("/", { scroll: false });
     }
   }, [preferNewDraft, briefParam, hydrated, authLoading, router]);

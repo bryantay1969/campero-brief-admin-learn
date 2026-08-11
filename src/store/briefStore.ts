@@ -389,7 +389,8 @@ export const useBriefStore = create<BriefState>()(
           formInstanceId: s.formInstanceId + 1,
           activeSection: "overview",
           showPreview: false,
-          showLibrary: false,
+          // Leave showLibrary to the caller so the panel can show a toast
+          // before closing (URL deep-links usually already have it closed).
         }));
         return true;
       },
@@ -508,6 +509,9 @@ export const useBriefStore = create<BriefState>()(
           return;
         }
         const exists = state.library.some((b) => b.id === next.id);
+        // Opening a different brief (deep link / library) — remount form.
+        // Same-id save after tab advance — keep section + form instance.
+        const switchingBrief = state.activeBriefId !== next.id;
         set({
           brief: stamped,
           activeBriefId: next.id,
@@ -518,6 +522,13 @@ export const useBriefStore = create<BriefState>()(
               ? state.library.map((b) => (b.id === next.id ? next : b))
               : [next, ...state.library]
           ),
+          ...(switchingBrief
+            ? {
+                formInstanceId: state.formInstanceId + 1,
+                activeSection: "overview" as const,
+                showPreview: false,
+              }
+            : {}),
         });
       },
     }),

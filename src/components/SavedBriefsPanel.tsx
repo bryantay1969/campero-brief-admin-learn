@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useBriefStore } from "@/store/briefStore";
 import { formatDisplayDate } from "@/lib/utils";
 import { downloadBriefJson, parseImportFile } from "@/lib/briefExport";
@@ -8,7 +9,9 @@ import { defaultBriefName } from "@/lib/briefIds";
 import { downloadBriefPdf } from "@/lib/pdf";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
+  briefEditorPath,
   deleteCloudBrief,
+  fetchCloudBriefById,
   getOrCreatePreviewUrl,
   renameCloudBrief,
   upsertCloudBrief,
@@ -31,6 +34,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export function SavedBriefsPanel() {
+  const router = useRouter();
   const show = useBriefStore((s) => s.showLibrary);
   const setShow = useBriefStore((s) => s.setShowLibrary);
   const library = useBriefStore((s) => s.library);
@@ -56,6 +60,7 @@ export function SavedBriefsPanel() {
   const [showSaveAs, setShowSaveAs] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const flash = (msg: string) => {
@@ -82,16 +87,53 @@ export function SavedBriefsPanel() {
 
   if (!show) return null;
 
-  const handleOpen = (id: string) => {
+  const handleOpen = async (id: string) => {
+    if (openingId) return;
     if (isDirty && activeBriefId !== id) {
       const ok = window.confirm(
         "You have unsaved changes on the current brief. Open anyway and discard them from the library version? (Tip: Save first.)"
       );
       if (!ok) return;
     }
-    if (openFromLibrary(id)) {
+
+    // Explicit open always clears the “new empty draft” lock so the brief can load.
+    useBriefStore.setState({ preferNewDraft: false });
+
+    const finishOpen = (openedId: string) => {
+      router.replace(briefEditorPath(openedId), { scroll: false });
       flash("Brief opened");
+      // Close after toast paints so the user sees confirmation
+      window.setTimeout(() => setShow(false), 450);
+    };
+
+    if (openFromLibrary(id)) {
+      finishOpen(id);
+      return;
     }
+
+    // Listed item missing from store (stale UI) or only on cloud — fetch & open.
+    if (cloudEnabled) {
+      setOpeningId(id);
+      try {
+        const rec = await fetchCloudBriefById(id);
+        if (!rec) {
+          flash("Brief not found or you don’t have access");
+          return;
+        }
+        // Clear draft lock again after await in case New empty ran mid-fetch
+        useBriefStore.setState({ preferNewDraft: false });
+        applyCloudSave(rec);
+        // applyCloudSave may already close the panel when switching briefs
+        finishOpen(id);
+      } catch (e) {
+        flash(e instanceof Error ? e.message : "Could not open brief");
+      } finally {
+        setOpeningId(null);
+      }
+      return;
+    }
+
+    flash("Brief not found in this browser’s library");
   };
 
   const handleSave = async () => {
@@ -492,7 +534,7 @@ export function SavedBriefsPanel() {
                         <div className="flex items-start justify-between gap-2">
                           <button
                             type="button"
-                            onClick={() => handleOpen(item.id)}
+                            onClick={() => void handleOpen(item.id)}
                             className="min-w-0 text-left flex-1"
                           >
                             <p className="text-sm font-bold text-stone-900 truncate">
@@ -520,11 +562,16 @@ export function SavedBriefsPanel() {
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           <button
                             type="button"
-                            onClick={() => handleOpen(item.id)}
-                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-orange-50"
+                            onClick={() => void handleOpen(item.id)}
+                            disabled={openingId === item.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-orange-50 disabled:opacity-50"
                           >
-                            <FolderOpen className="h-3 w-3" />
-                            Open
+                            {openingId === item.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <FolderOpen className="h-3 w-3" />
+                            )}
+                            {openingId === item.id ? "Opening…" : "Open"}
                           </button>
                           <button
                             type="button"

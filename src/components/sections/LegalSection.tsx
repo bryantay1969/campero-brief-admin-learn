@@ -139,26 +139,34 @@ export function LegalSection() {
 
   return (
     <SectionCard id="section-legal" title="Legal">
+      {/* Top bar: status left, Manage top-right (same pattern as Paid / Digital) */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-stone-500">
+          {loading
+            ? "Loading templates…"
+            : source === "cloud"
+              ? "Shared templates · live for all users"
+              : "Built-in templates"}
+          {" · "}
+          Pick a template or edit text for this brief only
+        </p>
+        {canAdmin && (
+          <Link
+            href="/admin/legal/"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Manage all templates
+          </Link>
+        )}
+      </div>
+
       {brief.loyaltyOnly === "yes" && (
         <div className="rounded-lg border border-campero-orange/30 bg-orange-50 px-3 py-2 text-sm text-stone-700">
           <strong className="text-campero-orange">Loyalty only:</strong>{" "}
           BOGO/Loyalty is recommended
           {bogo ? ` (“${bogo.label}”).` : "."} Confirm redemption notes match
           Rewards drop instructions.
-        </div>
-      )}
-
-      {canAdmin && (
-        <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-950">
-          <strong>Admin:</strong> add, edit, or delete shared templates on{" "}
-          <Link
-            href="/admin/legal/"
-            className="font-semibold underline underline-offset-2"
-          >
-            Manage all templates
-          </Link>
-          . Changes there apply for everyone. On this tab you only pick a
-          template or save text for this brief.
         </div>
       )}
 
@@ -172,13 +180,6 @@ export function LegalSection() {
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
           <FieldLabel>Shared templates</FieldLabel>
-          <span className="text-[10px] font-medium uppercase tracking-wide text-stone-400">
-            {loading
-              ? "Loading…"
-              : source === "cloud"
-                ? "From Supabase · live for all users"
-                : "Built-in fallback"}
-          </span>
         </div>
         <div className="flex flex-wrap gap-2">
           {templates.map((t) => {
@@ -204,17 +205,6 @@ export function LegalSection() {
             );
           })}
         </div>
-        {canAdmin && (
-          <div className="mt-3">
-            <Link
-              href="/admin/legal/"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Manage all templates
-            </Link>
-          </div>
-        )}
       </div>
 
       {/* Legal text for this brief only */}
