@@ -5,7 +5,7 @@ import { useBriefStore } from "@/store/briefStore";
 import { SectionCard } from "@/components/ui/FormControls";
 import { BriefPreview } from "@/components/preview/BriefPreview";
 import { downloadBriefPdf } from "@/lib/pdf";
-import { briefShareUrl } from "@/lib/supabase/briefsApi";
+import { getOrCreatePreviewUrl } from "@/lib/supabase/briefsApi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   CheckCircle2,
@@ -19,11 +19,13 @@ export function ReviewGenerate() {
   const brief = useBriefStore((s) => s.brief);
   const setShowPreview = useBriefStore((s) => s.setShowPreview);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
-  const { canEdit } = useAuth();
+  const { canEdit, cloudEnabled } = useAuth();
 
   const [pdfLoading, setPdfLoading] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "ok" | "err">("idle");
+  const [copyBusy, setCopyBusy] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Always show the generated brief when Review is open
   useEffect(() => {
@@ -46,19 +48,35 @@ export function ReviewGenerate() {
   const handleCopyLink = async () => {
     if (!activeBriefId) {
       window.alert(
-        "This brief isn’t in the library yet. Go to the next tab (or another section) to save, then copy the link."
+        "This brief isn’t saved yet. Use Save and Continue (or change section) so it has a cloud copy, then copy the public preview link."
       );
       return;
     }
-    const url = briefShareUrl(activeBriefId);
+    if (!cloudEnabled) {
+      window.alert(
+        "Sign in with cloud enabled to create a public preview link."
+      );
+      return;
+    }
+    setCopyBusy(true);
+    setLinkError(null);
     try {
-      await navigator.clipboard.writeText(url);
+      const { url } = await getOrCreatePreviewUrl(activeBriefId);
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        window.prompt("Copy this public preview link:", url);
+      }
       setCopyStatus("ok");
-      setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch {
-      window.prompt("Copy this brief link:", url);
-      setCopyStatus("ok");
-      setTimeout(() => setCopyStatus("idle"), 2000);
+      setTimeout(() => setCopyStatus("idle"), 2500);
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "Could not create preview link";
+      setLinkError(msg);
+      setCopyStatus("err");
+      setTimeout(() => setCopyStatus("idle"), 3000);
+    } finally {
+      setCopyBusy(false);
     }
   };
 
@@ -124,32 +142,42 @@ export function ReviewGenerate() {
         </button>
         <button
           type="button"
+          disabled={copyBusy}
           onClick={() => void handleCopyLink()}
-          className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-campero-orange/40 hover:bg-orange-50 transition-colors"
-          title={
-            activeBriefId
-              ? briefShareUrl(activeBriefId)
-              : "Available after the brief is saved (change section tab)"
-          }
+          className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-campero-orange/40 hover:bg-orange-50 transition-colors disabled:opacity-60"
+          title="Copy a public, view-only preview link (no login, no edit)"
         >
-          {copyStatus === "ok" ? (
+          {copyBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : copyStatus === "ok" ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           ) : (
             <Link2 className="h-4 w-4" />
           )}
-          {copyStatus === "ok"
-            ? "Link copied!"
-            : copyStatus === "err"
-              ? "Copy failed"
-              : "Copy link"}
+          {copyBusy
+            ? "Creating link…"
+            : copyStatus === "ok"
+              ? "Preview link copied!"
+              : copyStatus === "err"
+                ? "Copy failed"
+                : "Copy preview link"}
         </button>
       </div>
+
+      <p className="text-xs text-stone-500">
+        <strong>Copy preview link</strong> shares a public, read-only page of
+        this brief. Anyone with the link can view the preview — they cannot
+        edit.
+      </p>
 
       {pdfError && (
         <p className="text-sm text-red-600 flex items-center gap-2">
           <FileText className="h-4 w-4" />
           {pdfError}
         </p>
+      )}
+      {linkError && (
+        <p className="text-sm text-red-600 whitespace-pre-wrap">{linkError}</p>
       )}
 
       <div id="brief-preview-anchor" className="pt-2">

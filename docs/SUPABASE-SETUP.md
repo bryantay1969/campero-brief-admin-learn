@@ -76,7 +76,16 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-## 7. Service role key (for Admin add / edit / delete users)
+## 7. Public preview links (optional but recommended)
+
+For **Copy preview link** (anyone with the link can view a read-only brief):
+
+1. **SQL Editor** → open `supabase/public-preview.sql`
+2. Copy all → **Run**
+
+This adds a `share_token` column and a secure RPC so only people who have the token can load that one preview (not the whole library).
+
+## 8. Service role key (for Admin add / edit / delete users)
 
 User create/delete uses Supabase Auth Admin APIs, which need the **service role** key on the **server only**.
 

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useBriefStore } from "@/store/briefStore";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
-  briefSharePath,
+  briefEditorPath,
   fetchCloudBriefById,
 } from "@/lib/supabase/briefsApi";
 
@@ -139,7 +139,7 @@ function BriefUrlSyncInner() {
     const current = searchParams.get("brief");
     if (activeBriefId) {
       if (current !== activeBriefId) {
-        router.replace(briefSharePath(activeBriefId), { scroll: false });
+        router.replace(briefEditorPath(activeBriefId), { scroll: false });
       }
     } else if (current) {
       router.replace("/", { scroll: false });

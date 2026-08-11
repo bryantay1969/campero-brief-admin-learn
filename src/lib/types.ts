@@ -213,6 +213,8 @@ export interface SavedBriefRecord {
   createdAt: string;
   updatedAt: string;
   brief: PromoBrief;
+  /** Public preview token for /preview/<token> (view-only). */
+  shareToken?: string | null;
 }
 
 export type SectionId =

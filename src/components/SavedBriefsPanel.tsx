@@ -7,8 +7,8 @@ import { downloadBriefJson, parseImportFile } from "@/lib/briefExport";
 import { defaultBriefName } from "@/lib/briefIds";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
-  briefShareUrl,
   deleteCloudBrief,
+  getOrCreatePreviewUrl,
   renameCloudBrief,
   upsertCloudBrief,
 } from "@/lib/supabase/briefsApi";
@@ -526,19 +526,36 @@ export function SavedBriefsPanel() {
                           <button
                             type="button"
                             onClick={async () => {
-                              const url = briefShareUrl(item.id);
+                              if (!cloudEnabled) {
+                                flash("Sign in to create a public preview link");
+                                return;
+                              }
                               try {
-                                await navigator.clipboard.writeText(url);
-                                flash("Brief link copied");
-                              } catch {
-                                window.prompt("Copy this brief link:", url);
+                                const { url } = await getOrCreatePreviewUrl(
+                                  item.id
+                                );
+                                try {
+                                  await navigator.clipboard.writeText(url);
+                                  flash("Public preview link copied");
+                                } catch {
+                                  window.prompt(
+                                    "Copy this public preview link:",
+                                    url
+                                  );
+                                }
+                              } catch (e) {
+                                flash(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "Could not create preview link"
+                                );
                               }
                             }}
                             className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                            title={briefShareUrl(item.id)}
+                            title="Public view-only preview (no login)"
                           >
                             <Link2 className="h-3 w-3" />
-                            Copy link
+                            Copy preview link
                           </button>
                           <button
                             type="button"
@@ -588,9 +605,8 @@ export function SavedBriefsPanel() {
         </div>
 
         <footer className="border-t border-stone-100 px-5 py-3 text-[11px] text-stone-400">
-          Use <strong>Copy link</strong> to share a direct URL to a saved brief
-          (teammates need login + access). Export JSON still works for offline
-          backup.
+          <strong>Copy preview link</strong> shares a public, view-only page
+          (no login, no edit). Export JSON still works for offline backup.
         </footer>
 
         {toast && (

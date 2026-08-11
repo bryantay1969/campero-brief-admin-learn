@@ -1,4 +1,5 @@
 import type { PromoBrief, SavedBriefRecord } from "@/lib/types";
+import { createEmptyBrief } from "@/lib/defaults";
 import { getSupabase } from "./client";
 
 export type BriefRow = {
@@ -10,6 +11,7 @@ export type BriefRow = {
   created_by: string | null;
   updated_by: string | null;
   version: number;
+  share_token?: string | null;
 };
 
 export function rowToRecord(row: BriefRow): SavedBriefRecord {
@@ -19,10 +21,16 @@ export function rowToRecord(row: BriefRow): SavedBriefRecord {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     brief: row.data,
+    shareToken: row.share_token ?? null,
   };
 }
 
-function formatError(error: { message?: string; code?: string; details?: string; hint?: string }): string {
+function formatError(error: {
+  message?: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}): string {
   const parts = [
     error.message,
     error.code ? `(${error.code})` : null,
@@ -30,6 +38,16 @@ function formatError(error: { message?: string; code?: string; details?: string;
     error.hint,
   ].filter(Boolean);
   return parts.join(" — ") || "Unknown Supabase error";
+}
+
+function newShareToken(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return (
+      crypto.randomUUID().replace(/-/g, "") +
+      crypto.randomUUID().replace(/-/g, "").slice(0, 8)
+    );
+  }
+  return `tok${Date.now()}${Math.random().toString(36).slice(2, 12)}`;
 }
 
 export async function fetchCloudBriefs(): Promise<SavedBriefRecord[]> {
@@ -43,7 +61,7 @@ export async function fetchCloudBriefs(): Promise<SavedBriefRecord[]> {
   return ((data || []) as BriefRow[]).map(rowToRecord);
 }
 
-/** Load one brief by id (for direct links). Returns null if missing or no access. */
+/** Load one brief by id (authenticated editor deep links). */
 export async function fetchCloudBriefById(
   id: string
 ): Promise<SavedBriefRecord | null> {
@@ -59,13 +77,127 @@ export async function fetchCloudBriefById(
   return rowToRecord(data as BriefRow);
 }
 
-export function briefSharePath(id: string): string {
+/** Editor deep link into the builder (login required). */
+export function briefEditorPath(id: string): string {
   return `/?brief=${encodeURIComponent(id)}`;
 }
 
+/** Public view-only preview path. */
+export function briefPreviewPath(token: string): string {
+  return `/preview/${encodeURIComponent(token)}/`;
+}
+
+export function briefPreviewUrl(token: string): string {
+  if (typeof window === "undefined") return briefPreviewPath(token);
+  return `${window.location.origin}${briefPreviewPath(token)}`;
+}
+
+/** @deprecated Use briefEditorPath / briefPreviewUrl */
+export function briefSharePath(id: string): string {
+  return briefEditorPath(id);
+}
+
+/** @deprecated Use briefPreviewUrl with share token */
 export function briefShareUrl(id: string): string {
-  if (typeof window === "undefined") return briefSharePath(id);
-  return `${window.location.origin}${briefSharePath(id)}`;
+  return briefEditorPath(id);
+}
+
+/**
+ * Ensure a brief has a share_token and return the public preview URL.
+ * Creates a token if missing (column from public-preview.sql).
+ */
+export async function getOrCreatePreviewUrl(
+  briefId: string
+): Promise<{ url: string; token: string }> {
+  const token = await ensureBriefShareToken(briefId);
+  return { token, url: briefPreviewUrl(token) };
+}
+
+export async function ensureBriefShareToken(briefId: string): Promise<string> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("briefs")
+    .select("id, share_token")
+    .eq("id", briefId)
+    .maybeSingle();
+
+  if (error) {
+    const msg = formatError(error);
+    if (msg.includes("share_token") || msg.includes("column")) {
+      throw new Error(
+        `${msg} — Run supabase/public-preview.sql in the Supabase SQL Editor to enable public preview links.`
+      );
+    }
+    throw new Error(msg);
+  }
+  if (!data) throw new Error("Brief not found in the cloud library.");
+
+  if (data.share_token && String(data.share_token).length >= 16) {
+    return String(data.share_token);
+  }
+
+  const token = newShareToken();
+  const { data: updated, error: updateError } = await supabase
+    .from("briefs")
+    .update({ share_token: token })
+    .eq("id", briefId)
+    .select("share_token")
+    .single();
+
+  if (updateError) {
+    const msg = formatError(updateError);
+    if (msg.includes("share_token") || msg.includes("column")) {
+      throw new Error(
+        `${msg} — Run supabase/public-preview.sql in the Supabase SQL Editor to enable public preview links.`
+      );
+    }
+    throw new Error(msg);
+  }
+  return String(updated.share_token || token);
+}
+
+/** Anonymous-safe fetch for public preview pages. */
+export async function fetchPublicBriefPreview(
+  token: string
+): Promise<{ id: string; name: string; brief: PromoBrief; updatedAt: string } | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc("get_public_brief_preview", {
+    p_token: token,
+  });
+
+  if (error) {
+    const msg = formatError(error);
+    if (
+      msg.includes("get_public_brief_preview") ||
+      msg.includes("function") ||
+      msg.includes("does not exist")
+    ) {
+      throw new Error(
+        `${msg} — Run supabase/public-preview.sql in the Supabase SQL Editor.`
+      );
+    }
+    throw new Error(msg);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+
+  const raw = row as {
+    id: string;
+    name: string;
+    data: PromoBrief | Record<string, unknown>;
+    updated_at: string;
+  };
+
+  return {
+    id: raw.id,
+    name: raw.name,
+    brief: {
+      ...createEmptyBrief(),
+      ...(raw.data as PromoBrief),
+    },
+    updatedAt: raw.updated_at,
+  };
 }
 
 /**
@@ -87,10 +219,9 @@ export async function upsertCloudBrief(input: {
         ? crypto.randomUUID()
         : `brief-${Date.now()}`;
 
-  // Check if row already exists (update vs insert for created_by)
   const { data: existing, error: existingError } = await supabase
     .from("briefs")
-    .select("id")
+    .select("id, share_token")
     .eq("id", id)
     .maybeSingle();
 
@@ -125,11 +256,36 @@ export async function upsertCloudBrief(input: {
       updated_by: input.userId,
       created_at: now,
       updated_at: now,
+      share_token: newShareToken(),
     })
     .select("*")
     .single();
 
-  if (error) throw new Error(formatError(error));
+  if (error) {
+    // Column missing: retry insert without share_token
+    if (
+      error.message?.includes("share_token") ||
+      error.code === "PGRST204" ||
+      error.message?.includes("column")
+    ) {
+      const { data: data2, error: error2 } = await supabase
+        .from("briefs")
+        .insert({
+          id,
+          name: input.name,
+          data: input.brief,
+          created_by: input.userId,
+          updated_by: input.userId,
+          created_at: now,
+          updated_at: now,
+        })
+        .select("*")
+        .single();
+      if (error2) throw new Error(formatError(error2));
+      return rowToRecord(data2 as BriefRow);
+    }
+    throw new Error(formatError(error));
+  }
   return rowToRecord(data as BriefRow);
 }
 
