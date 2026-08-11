@@ -191,11 +191,39 @@ export const useBriefStore = create<BriefState>()(
       setShowLibrary: (show) => set({ showLibrary: show }),
       setHydrated: (v) => set({ hydrated: v }),
 
-      updateBrief: (partial) =>
-        set({
-          brief: stampBrief({ ...get().brief, ...partial }),
-          isDirty: true,
-        }),
+      updateBrief: (partial) => {
+        const state = get();
+        const brief = stampBrief({ ...state.brief, ...partial });
+        // Keep library display name in sync with Promo / Initiative Name
+        if (
+          partial.promoName !== undefined &&
+          state.activeBriefId
+        ) {
+          const trimmed = String(partial.promoName).trim();
+          const now = new Date().toISOString();
+          set({
+            brief,
+            isDirty: true,
+            library: sortLibrary(
+              state.library.map((b) =>
+                b.id === state.activeBriefId
+                  ? {
+                      ...b,
+                      name: trimmed || b.name,
+                      updatedAt: now,
+                      brief: stampBrief({
+                        ...b.brief,
+                        promoName: String(partial.promoName ?? ""),
+                      }),
+                    }
+                  : b
+              )
+            ),
+          });
+          return;
+        }
+        set({ brief, isDirty: true });
+      },
 
       setBrief: (brief) =>
         set({
@@ -203,11 +231,36 @@ export const useBriefStore = create<BriefState>()(
           isDirty: true,
         }),
 
-      patch: (key, value) =>
-        set({
-          brief: stampBrief({ ...get().brief, [key]: value }),
-          isDirty: true,
-        }),
+      patch: (key, value) => {
+        const state = get();
+        const brief = stampBrief({ ...state.brief, [key]: value });
+        // Promo name ↔ library brief name stay in sync for the open brief
+        if (key === "promoName" && state.activeBriefId) {
+          const trimmed = String(value ?? "").trim();
+          const now = new Date().toISOString();
+          set({
+            brief,
+            isDirty: true,
+            library: sortLibrary(
+              state.library.map((b) =>
+                b.id === state.activeBriefId
+                  ? {
+                      ...b,
+                      name: trimmed || b.name,
+                      updatedAt: now,
+                      brief: stampBrief({
+                        ...b.brief,
+                        promoName: String(value ?? ""),
+                      }),
+                    }
+                  : b
+              )
+            ),
+          });
+          return;
+        }
+        set({ brief, isDirty: true });
+      },
 
       loadSample: () =>
         set((s) => ({
@@ -355,15 +408,31 @@ export const useBriefStore = create<BriefState>()(
       renameInLibrary: (id, name) => {
         const trimmed = name.trim();
         if (!trimmed) return;
-        set({
-          library: sortLibrary(
-            get().library.map((b) =>
-              b.id === id
-                ? { ...b, name: trimmed, updatedAt: new Date().toISOString() }
-                : b
-            )
-          ),
-        });
+        const state = get();
+        const now = new Date().toISOString();
+        const library = sortLibrary(
+          state.library.map((b) =>
+            b.id === id
+              ? {
+                  ...b,
+                  name: trimmed,
+                  updatedAt: now,
+                  // Keep Overview “Promo / Initiative Name” in sync
+                  brief: stampBrief({ ...b.brief, promoName: trimmed }),
+                }
+              : b
+          )
+        );
+        // If this is the open brief, update the form + header too
+        if (state.activeBriefId === id) {
+          set({
+            library,
+            brief: stampBrief({ ...state.brief, promoName: trimmed }),
+            isDirty: true,
+          });
+          return;
+        }
+        set({ library });
       },
 
       duplicateInLibrary: (id) => {

@@ -301,10 +301,28 @@ export async function renameCloudBrief(
   userId: string
 ): Promise<void> {
   const supabase = getSupabase();
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Name is required");
+
+  // Keep cloud library name and Overview promoName in sync
+  const { data: existing, error: fetchError } = await supabase
+    .from("briefs")
+    .select("data")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) throw new Error(formatError(fetchError));
+
+  const prevData =
+    existing?.data && typeof existing.data === "object"
+      ? (existing.data as PromoBrief)
+      : ({} as PromoBrief);
+
   const { error } = await supabase
     .from("briefs")
     .update({
-      name,
+      name: trimmed,
+      data: { ...prevData, promoName: trimmed },
       updated_by: userId,
       updated_at: new Date().toISOString(),
     })

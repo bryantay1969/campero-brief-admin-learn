@@ -179,8 +179,8 @@ export function LeftToolbar({
         </p>
         <div className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-2">
           <p className="text-xs font-semibold text-stone-800 truncate">
-            {active?.name ||
-              brief.promoName.trim() ||
+            {brief.promoName.trim() ||
+              active?.name ||
               (preferNewDraft || !activeBriefId
                 ? isViewer
                   ? "Browsing"

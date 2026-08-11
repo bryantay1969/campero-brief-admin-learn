@@ -129,9 +129,10 @@ export function AppShell() {
   const prev = idx > 0 ? SECTIONS[idx - 1] : null;
   const next = idx < SECTIONS.length - 1 ? SECTIONS[idx + 1] : null;
 
+  // Library name and promoName stay in sync; prefer live form field
   const activeName =
-    library.find((b) => b.id === activeBriefId)?.name ||
     brief.promoName.trim() ||
+    library.find((b) => b.id === activeBriefId)?.name ||
     "Untitled draft";
 
   return (
