@@ -229,7 +229,14 @@ function AdminPanel() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
             >
               <FileText className="h-3.5 w-3.5" />
-              IT / OLO assets
+              IT / OLO
+            </Link>
+            <Link
+              href="/admin/catalog/digital/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Form catalogs
             </Link>
             <Link
               href="/"

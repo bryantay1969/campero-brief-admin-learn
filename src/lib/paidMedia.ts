@@ -3,6 +3,8 @@ import type {
   PaidMedia,
   PaidMediaAssetItem,
 } from "./types";
+import type { FormAssetCatalogDef } from "./formAssetCatalog";
+import { mergeListWithCatalog } from "./formAssetCatalog";
 
 function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -31,8 +33,30 @@ export const BUILT_IN_PAID_MEDIA_IDS = new Set([
   "olvYoutube",
 ]);
 
-export function isCustomPaidMediaAsset(asset: PaidMediaAssetItem): boolean {
+export function isCustomPaidMediaAsset(
+  asset: PaidMediaAssetItem,
+  catalogSlugs?: Set<string>
+): boolean {
+  if (catalogSlugs && catalogSlugs.size > 0) {
+    return !catalogSlugs.has(asset.id);
+  }
   return !BUILT_IN_PAID_MEDIA_IDS.has(asset.id);
+}
+
+export function mergePaidWithCatalog(
+  briefAssets: PaidMedia,
+  catalog: FormAssetCatalogDef[]
+): PaidMedia {
+  return mergeListWithCatalog(briefAssets, catalog, (p) =>
+    createPaidMediaAsset({
+      id: p.id,
+      title: p.title,
+      specs: p.specs,
+      notes: p.notes,
+      enabled: p.enabled,
+      priority: p.priority || "",
+    })
+  );
 }
 
 export const PAID_MEDIA_SPEC_SHEET = {

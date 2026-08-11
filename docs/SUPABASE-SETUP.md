@@ -76,14 +76,19 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-## 7. IT / OLO global assets (optional but recommended)
+## 7. Global form asset catalogs (optional but recommended)
 
-For admin-managed IT checklist assets:
+**IT / OLO**
 
-1. **SQL Editor** → open `supabase/it-asset-catalog.sql`
-2. Copy all → **Run**
+1. Run `supabase/it-asset-catalog.sql`
+2. Admin → **IT / OLO** (or IT tab → Manage IT assets)
 
-Then open the app as admin → **Admin → IT / OLO assets** (or IT tab → Manage IT assets).
+**Digital, Paid Media, In-Store, PR**
+
+1. Run `supabase/form-asset-catalogs.sql`
+2. Admin → **Form catalogs** (or each tab’s **Manage …** link)
+
+Admins can set name, subtitle, description hint, and pre-filled description for shared checklist items.
 
 ## 8. Public preview links (optional but recommended)
 

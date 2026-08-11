@@ -4,6 +4,8 @@ import type {
   DigitalAssets,
   LegacyDigitalAssets,
 } from "./types";
+import type { FormAssetCatalogDef } from "./formAssetCatalog";
+import { mergeListWithCatalog } from "./formAssetCatalog";
 
 function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -55,9 +57,51 @@ export function isEmailAsset(asset: DigitalAssetItem): boolean {
   return asset.id === EMAIL_ASSET_ID || asset.title.trim().toLowerCase() === "email";
 }
 
-/** User-added rows can edit title + subtitle; built-ins keep fixed labels. */
-export function isCustomDigitalAsset(asset: DigitalAssetItem): boolean {
+/** User-added rows can edit title + subtitle; catalog rows keep shared labels. */
+export function isCustomDigitalAsset(
+  asset: DigitalAssetItem,
+  catalogSlugs?: Set<string>
+): boolean {
+  if (catalogSlugs && catalogSlugs.size > 0) {
+    return !catalogSlugs.has(asset.id);
+  }
   return !BUILT_IN_DIGITAL_ASSET_IDS.has(asset.id);
+}
+
+/** Merge global digital catalog into a brief’s list (preserves email fields). */
+export function mergeDigitalWithCatalog(
+  briefAssets: DigitalAssets,
+  catalog: FormAssetCatalogDef[]
+): DigitalAssets {
+  const emailTemplate = createDefaultDigitalAssets().find(
+    (a) => a.id === EMAIL_ASSET_ID
+  );
+  return mergeListWithCatalog(briefAssets, catalog, (p) => {
+    const existing = briefAssets.find((a) => a.id === p.id);
+    if (p.id === EMAIL_ASSET_ID || p.title.toLowerCase() === "email") {
+      return createDigitalAsset({
+        id: p.id,
+        title: p.title,
+        specs: p.specs,
+        notes: p.notes,
+        enabled: p.enabled,
+        priority: p.priority || emailTemplate?.priority || "",
+        fields:
+          existing?.fields?.length
+            ? existing.fields
+            : emailTemplate?.fields || [],
+      });
+    }
+    return createDigitalAsset({
+      id: p.id,
+      title: p.title,
+      specs: p.specs,
+      notes: p.notes,
+      enabled: p.enabled,
+      priority: p.priority || "",
+      fields: existing?.fields || [],
+    });
+  });
 }
 
 /** Default Campero digital asset checklist. Non-email rows use checkbox + description only. */

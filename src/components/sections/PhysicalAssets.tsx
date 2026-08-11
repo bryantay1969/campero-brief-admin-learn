@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useBriefStore } from "@/store/briefStore";
 import type { PhysicalAsset } from "@/lib/types";
 import {
   createPhysicalAsset,
   isCustomPhysicalAsset,
+  mergePhysicalAssetsWithCatalog,
 } from "@/lib/defaults";
+import type { FormAssetCatalogDef } from "@/lib/formAssetCatalog";
+import { BUILTIN_CATALOGS } from "@/lib/formAssetCatalogBuiltins";
+import { fetchCatalogForForm } from "@/lib/supabase/formAssetCatalogApi";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   SectionCard,
   FieldLabel,
@@ -13,14 +20,54 @@ import {
   TextArea,
 } from "@/components/ui/FormControls";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Plus, Trash2 } from "lucide-react";
 
 export function PhysicalAssets() {
   const brief = useBriefStore((s) => s.brief);
   const patch = useBriefStore((s) => s.patch);
+  const { canEdit, canAdmin, isViewer } = useAuth();
   const assets = Array.isArray(brief.physicalAssets)
     ? brief.physicalAssets
     : [];
+  const [catalog, setCatalog] = useState<FormAssetCatalogDef[]>(
+    BUILTIN_CATALOGS.physical
+  );
+  const [source, setSource] = useState<"cloud" | "builtin">("builtin");
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingCatalog(true);
+      try {
+        const list = await fetchCatalogForForm("physical");
+        if (cancelled) return;
+        setCatalog(list);
+        setSource(list.some((t) => t.dbId) ? "cloud" : "builtin");
+        const current = useBriefStore.getState().brief.physicalAssets;
+        const currentList = Array.isArray(current) ? current : [];
+        const merged = mergePhysicalAssetsWithCatalog(currentList, list);
+        if (JSON.stringify(merged) !== JSON.stringify(currentList)) {
+          useBriefStore.getState().patch("physicalAssets", merged);
+        }
+      } finally {
+        if (!cancelled) setLoadingCatalog(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const catalogSlugs = useMemo(
+    () => new Set(catalog.map((c) => c.slug)),
+    [catalog]
+  );
+  const placeholderById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of catalog) m.set(c.slug, c.notesPlaceholder);
+    return m;
+  }, [catalog]);
 
   const setAssets = (next: PhysicalAsset[]) => {
     patch("physicalAssets", next);
@@ -45,12 +92,11 @@ export function PhysicalAssets() {
   };
 
   const addAsset = () => {
-    const item = createPhysicalAsset({
-      label: "",
-      specs: "",
-      enabled: true,
-    });
-    setAssets([...assets, item]);
+    if (!canEdit) return;
+    setAssets([
+      ...assets,
+      createPhysicalAsset({ label: "", specs: "", enabled: true }),
+    ]);
   };
 
   return (
@@ -58,36 +104,44 @@ export function PhysicalAssets() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-stone-500">
           {assets.filter((a) => a.enabled).length} of {assets.length} selected
+          {loadingCatalog
+            ? " · Loading catalog…"
+            : source === "cloud"
+              ? " · Shared catalog"
+              : " · Built-in catalog"}
         </p>
-        <button
-          type="button"
-          onClick={addAsset}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add in-store asset
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {assets.length === 0 && (
-          <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">
-            No in-store assets yet.{" "}
+        <div className="flex flex-wrap gap-2">
+          {canAdmin && (
+            <Link
+              href="/admin/catalog/physical/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Manage in-store assets
+            </Link>
+          )}
+          {canEdit && (
             <button
               type="button"
               onClick={addAsset}
-              className="font-semibold text-campero-orange hover:underline"
+              disabled={isViewer}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white hover:bg-campero-orange-dark disabled:opacity-50"
             >
-              Add one
+              <Plus className="h-3.5 w-3.5" />
+              Add for this brief only
             </button>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
 
+      <div className="space-y-3">
         {assets.map((asset) => {
-          const custom = isCustomPhysicalAsset(asset);
+          const custom = isCustomPhysicalAsset(asset, catalogSlugs);
           const displayTitle =
             asset.label.trim() ||
             (custom ? "New in-store asset" : "Untitled asset");
+          const placeholder =
+            placeholderById.get(asset.id) || "Production notes…";
 
           return (
             <div
@@ -104,13 +158,14 @@ export function PhysicalAssets() {
                   <input
                     type="checkbox"
                     checked={asset.enabled}
+                    disabled={!canEdit}
                     onChange={(e) =>
                       updateAsset(asset.id, (a) => ({
                         ...a,
                         enabled: e.target.checked,
                       }))
                     }
-                    className="mt-0.5 h-4 w-4 rounded border-stone-300 text-campero-orange focus:ring-campero-orange"
+                    className="mt-0.5 h-4 w-4 rounded border-stone-300 text-campero-orange focus:ring-campero-orange disabled:opacity-50"
                   />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-stone-900">
@@ -123,26 +178,25 @@ export function PhysicalAssets() {
                     )}
                   </span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => removeAsset(asset.id)}
-                  className="shrink-0 rounded-lg border border-red-100 p-1.5 text-red-500 hover:bg-red-50"
-                  aria-label="Remove asset"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {canEdit && custom && (
+                  <button
+                    type="button"
+                    onClick={() => removeAsset(asset.id)}
+                    className="shrink-0 rounded-lg border border-red-100 p-1.5 text-red-500 hover:bg-red-50"
+                    aria-label="Remove asset"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               {asset.enabled && (
                 <div className="border-t border-stone-100 px-4 py-4 space-y-3 ml-7">
-                  {custom && (
+                  {custom && canEdit && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <FieldLabel htmlFor={`phys-title-${asset.id}`}>
-                          Name
-                        </FieldLabel>
+                        <FieldLabel>Name</FieldLabel>
                         <TextInput
-                          id={`phys-title-${asset.id}`}
                           value={asset.label}
                           onChange={(e) =>
                             updateAsset(asset.id, (a) => ({
@@ -150,18 +204,12 @@ export function PhysicalAssets() {
                               label: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Table tent"
+                          placeholder="e.g. Counter tent card"
                         />
                       </div>
                       <div>
-                        <FieldLabel
-                          htmlFor={`phys-specs-${asset.id}`}
-                          hint="Small line under the name (sizes, format, etc.)"
-                        >
-                          Subtitle
-                        </FieldLabel>
+                        <FieldLabel>Subtitle</FieldLabel>
                         <TextInput
-                          id={`phys-specs-${asset.id}`}
                           value={asset.specs}
                           onChange={(e) =>
                             updateAsset(asset.id, (a) => ({
@@ -169,26 +217,23 @@ export function PhysicalAssets() {
                               specs: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 24×36, 2-sided"
+                          placeholder="e.g. 4×6, Full color"
                         />
                       </div>
                     </div>
                   )}
-
                   <div>
-                    <FieldLabel htmlFor={`phys-desc-${asset.id}`}>
-                      Description
-                    </FieldLabel>
+                    <FieldLabel>Description</FieldLabel>
                     <TextArea
-                      id={`phys-desc-${asset.id}`}
                       value={asset.notes}
+                      disabled={!canEdit}
                       onChange={(e) =>
                         updateAsset(asset.id, (a) => ({
                           ...a,
                           notes: e.target.value,
                         }))
                       }
-                      placeholder="Production notes, quantities, markets, or other details…"
+                      placeholder={placeholder}
                       className="min-h-[80px]"
                       rows={3}
                     />

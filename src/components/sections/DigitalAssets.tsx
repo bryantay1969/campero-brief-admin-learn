@@ -1,14 +1,21 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useBriefStore } from "@/store/briefStore";
 import type { DigitalAssetField, DigitalAssetItem } from "@/lib/types";
 import {
   createDigitalAsset,
   isCustomDigitalAsset,
   isEmailAsset,
+  mergeDigitalWithCatalog,
   SMS_DESCRIPTION_PLACEHOLDER,
   WHATSAPP_DESCRIPTION_PLACEHOLDER,
 } from "@/lib/digitalAssets";
+import type { FormAssetCatalogDef } from "@/lib/formAssetCatalog";
+import { BUILTIN_CATALOGS } from "@/lib/formAssetCatalogBuiltins";
+import { fetchCatalogForForm } from "@/lib/supabase/formAssetCatalogApi";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   SectionCard,
   FieldLabel,
@@ -17,12 +24,52 @@ import {
   Checkbox,
 } from "@/components/ui/FormControls";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Plus, Trash2 } from "lucide-react";
 
 export function DigitalAssets() {
   const brief = useBriefStore((s) => s.brief);
   const patch = useBriefStore((s) => s.patch);
+  const { canEdit, canAdmin, isViewer } = useAuth();
   const assets = brief.digitalAssets;
+  const [catalog, setCatalog] = useState<FormAssetCatalogDef[]>(
+    BUILTIN_CATALOGS.digital
+  );
+  const [source, setSource] = useState<"cloud" | "builtin">("builtin");
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingCatalog(true);
+      try {
+        const list = await fetchCatalogForForm("digital");
+        if (cancelled) return;
+        setCatalog(list);
+        setSource(list.some((t) => t.dbId) ? "cloud" : "builtin");
+        const current = useBriefStore.getState().brief.digitalAssets;
+        const currentList = Array.isArray(current) ? current : [];
+        const merged = mergeDigitalWithCatalog(currentList, list);
+        if (JSON.stringify(merged) !== JSON.stringify(currentList)) {
+          useBriefStore.getState().patch("digitalAssets", merged);
+        }
+      } finally {
+        if (!cancelled) setLoadingCatalog(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const catalogSlugs = useMemo(
+    () => new Set(catalog.map((c) => c.slug)),
+    [catalog]
+  );
+  const placeholderById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of catalog) m.set(c.slug, c.notesPlaceholder);
+    return m;
+  }, [catalog]);
 
   const setAssets = (next: DigitalAssetItem[]) => {
     patch("digitalAssets", next);
@@ -74,15 +121,34 @@ export function DigitalAssets() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-stone-500">
           {assets.filter((a) => a.enabled).length} of {assets.length} selected
+          {loadingCatalog
+            ? " · Loading catalog…"
+            : source === "cloud"
+              ? " · Shared catalog"
+              : " · Built-in catalog"}
         </p>
-        <button
-          type="button"
-          onClick={addAsset}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add digital asset
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {canAdmin && (
+            <Link
+              href="/admin/catalog/digital/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Manage digital assets
+            </Link>
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={addAsset}
+              disabled={isViewer}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark disabled:opacity-50"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add for this brief only
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -101,9 +167,16 @@ export function DigitalAssets() {
 
         {assets.map((asset) => {
           const email = isEmailAsset(asset);
-          const custom = isCustomDigitalAsset(asset);
+          const custom = isCustomDigitalAsset(asset, catalogSlugs);
           const displayTitle =
             asset.title.trim() || (custom ? "New digital asset" : "Untitled asset");
+          const descPlaceholder =
+            placeholderById.get(asset.id) ||
+            (asset.id === "smsCopy"
+              ? SMS_DESCRIPTION_PLACEHOLDER
+              : asset.id === "whatsappCopy"
+                ? WHATSAPP_DESCRIPTION_PLACEHOLDER
+                : "Specs, copy, timing, or other details…");
 
           return (
             <div
@@ -137,21 +210,23 @@ export function DigitalAssets() {
                         {asset.specs}
                       </span>
                     )}
-                    {email && asset.priority && (
+                    {asset.priority?.trim() && (
                       <span className="mt-1 inline-block text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5">
                         ⚡ {asset.priority}
                       </span>
                     )}
                   </span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => removeAsset(asset.id)}
-                  className="shrink-0 rounded-lg border border-red-100 p-1.5 text-red-500 hover:bg-red-50"
-                  aria-label="Remove asset"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {canEdit && custom && (
+                  <button
+                    type="button"
+                    onClick={() => removeAsset(asset.id)}
+                    className="shrink-0 rounded-lg border border-red-100 p-1.5 text-red-500 hover:bg-red-50"
+                    aria-label="Remove asset"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               {asset.enabled && (
@@ -229,15 +304,7 @@ export function DigitalAssets() {
                           notes: e.target.value,
                         }))
                       }
-                      placeholder={
-                        asset.id === "smsCopy"
-                          ? SMS_DESCRIPTION_PLACEHOLDER
-                          : asset.id === "whatsappCopy"
-                            ? WHATSAPP_DESCRIPTION_PLACEHOLDER
-                            : email
-                              ? "Punchh timing, modules, creative notes…"
-                              : "Specs, copy, sizes, or other details…"
-                      }
+                      placeholder={descPlaceholder}
                       className="min-h-[80px]"
                       rows={3}
                     />

@@ -10,6 +10,8 @@ import {
 } from "./digitalAssets";
 import { createDefaultITElements } from "./itElements";
 import { createDefaultPaidMedia } from "./paidMedia";
+import type { FormAssetCatalogDef } from "./formAssetCatalog";
+import { mergePhysicalWithCatalog } from "./formAssetCatalog";
 
 function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -38,8 +40,29 @@ export const BUILT_IN_PHYSICAL_ASSET_IDS = new Set([
   "kioskHomepage",
 ]);
 
-export function isCustomPhysicalAsset(asset: PhysicalAsset): boolean {
+export function isCustomPhysicalAsset(
+  asset: PhysicalAsset,
+  catalogSlugs?: Set<string>
+): boolean {
+  if (catalogSlugs && catalogSlugs.size > 0) {
+    return !catalogSlugs.has(asset.id);
+  }
   return !BUILT_IN_PHYSICAL_ASSET_IDS.has(asset.id);
+}
+
+export function mergePhysicalAssetsWithCatalog(
+  briefAssets: PhysicalAsset[],
+  catalog: FormAssetCatalogDef[]
+): PhysicalAsset[] {
+  return mergePhysicalWithCatalog(briefAssets, catalog, (p) =>
+    createPhysicalAsset({
+      id: p.id,
+      label: p.label,
+      specs: p.specs,
+      notes: p.notes,
+      enabled: p.enabled,
+    })
+  );
 }
 
 export function createPhysicalAsset(

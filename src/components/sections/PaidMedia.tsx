@@ -1,12 +1,19 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useBriefStore } from "@/store/briefStore";
 import type { PaidMediaAssetItem } from "@/lib/types";
 import {
   createPaidMediaAsset,
   isCustomPaidMediaAsset,
+  mergePaidWithCatalog,
   PAID_MEDIA_SPEC_SHEET,
 } from "@/lib/paidMedia";
+import type { FormAssetCatalogDef } from "@/lib/formAssetCatalog";
+import { BUILTIN_CATALOGS } from "@/lib/formAssetCatalogBuiltins";
+import { fetchCatalogForForm } from "@/lib/supabase/formAssetCatalogApi";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   SectionCard,
   FieldLabel,
@@ -19,7 +26,47 @@ import { ExternalLink, Plus, Trash2 } from "lucide-react";
 export function PaidMedia() {
   const brief = useBriefStore((s) => s.brief);
   const patch = useBriefStore((s) => s.patch);
+  const { canEdit, canAdmin, isViewer } = useAuth();
   const assets = Array.isArray(brief.paidMedia) ? brief.paidMedia : [];
+  const [catalog, setCatalog] = useState<FormAssetCatalogDef[]>(
+    BUILTIN_CATALOGS.paid
+  );
+  const [source, setSource] = useState<"cloud" | "builtin">("builtin");
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingCatalog(true);
+      try {
+        const list = await fetchCatalogForForm("paid");
+        if (cancelled) return;
+        setCatalog(list);
+        setSource(list.some((t) => t.dbId) ? "cloud" : "builtin");
+        const current = useBriefStore.getState().brief.paidMedia;
+        const currentList = Array.isArray(current) ? current : [];
+        const merged = mergePaidWithCatalog(currentList, list);
+        if (JSON.stringify(merged) !== JSON.stringify(currentList)) {
+          useBriefStore.getState().patch("paidMedia", merged);
+        }
+      } finally {
+        if (!cancelled) setLoadingCatalog(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const catalogSlugs = useMemo(
+    () => new Set(catalog.map((c) => c.slug)),
+    [catalog]
+  );
+  const placeholderById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of catalog) m.set(c.slug, c.notesPlaceholder);
+    return m;
+  }, [catalog]);
 
   const setAssets = (next: PaidMediaAssetItem[]) => {
     patch("paidMedia", next);
@@ -44,12 +91,11 @@ export function PaidMedia() {
   };
 
   const addAsset = () => {
-    const item = createPaidMediaAsset({
-      title: "",
-      specs: "",
-      enabled: true,
-    });
-    setAssets([...assets, item]);
+    if (!canEdit) return;
+    setAssets([
+      ...assets,
+      createPaidMediaAsset({ title: "", specs: "", enabled: true }),
+    ]);
   };
 
   return (
@@ -62,42 +108,50 @@ export function PaidMedia() {
       >
         {PAID_MEDIA_SPEC_SHEET.label}
         <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="sr-only">(opens in new tab)</span>
       </a>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-stone-500">
           {assets.filter((a) => a.enabled).length} of {assets.length} selected
+          {loadingCatalog
+            ? " · Loading catalog…"
+            : source === "cloud"
+              ? " · Shared catalog"
+              : " · Built-in catalog"}
         </p>
-        <button
-          type="button"
-          onClick={addAsset}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add paid media asset
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {assets.length === 0 && (
-          <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">
-            No paid media assets yet.{" "}
+        <div className="flex flex-wrap gap-2">
+          {canAdmin && (
+            <Link
+              href="/admin/catalog/paid/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Manage paid media
+            </Link>
+          )}
+          {canEdit && (
             <button
               type="button"
               onClick={addAsset}
-              className="font-semibold text-campero-orange hover:underline"
+              disabled={isViewer}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white hover:bg-campero-orange-dark disabled:opacity-50"
             >
-              Add one
+              <Plus className="h-3.5 w-3.5" />
+              Add for this brief only
             </button>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
 
+      <div className="space-y-3">
         {assets.map((asset) => {
-          const custom = isCustomPaidMediaAsset(asset);
+          const custom = isCustomPaidMediaAsset(asset, catalogSlugs);
           const displayTitle =
             asset.title.trim() ||
             (custom ? "New paid media asset" : "Untitled asset");
+          const placeholder =
+            placeholderById.get(asset.id) ||
+            "Headlines, primary text, CTAs, timing…";
 
           return (
             <div
@@ -114,13 +168,14 @@ export function PaidMedia() {
                   <input
                     type="checkbox"
                     checked={asset.enabled}
+                    disabled={!canEdit}
                     onChange={(e) =>
                       updateAsset(asset.id, (a) => ({
                         ...a,
                         enabled: e.target.checked,
                       }))
                     }
-                    className="mt-0.5 h-4 w-4 rounded border-stone-300 text-campero-orange focus:ring-campero-orange"
+                    className="mt-0.5 h-4 w-4 rounded border-stone-300 text-campero-orange focus:ring-campero-orange disabled:opacity-50"
                   />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-stone-900">
@@ -138,26 +193,25 @@ export function PaidMedia() {
                     )}
                   </span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => removeAsset(asset.id)}
-                  className="shrink-0 rounded-lg border border-red-100 p-1.5 text-red-500 hover:bg-red-50"
-                  aria-label="Remove asset"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {canEdit && custom && (
+                  <button
+                    type="button"
+                    onClick={() => removeAsset(asset.id)}
+                    className="shrink-0 rounded-lg border border-red-100 p-1.5 text-red-500 hover:bg-red-50"
+                    aria-label="Remove asset"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               {asset.enabled && (
                 <div className="border-t border-stone-100 px-4 py-4 space-y-3 ml-7">
-                  {custom && (
+                  {custom && canEdit && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <FieldLabel htmlFor={`pm-title-${asset.id}`}>
-                          Name
-                        </FieldLabel>
+                        <FieldLabel>Name</FieldLabel>
                         <TextInput
-                          id={`pm-title-${asset.id}`}
                           value={asset.title}
                           onChange={(e) =>
                             updateAsset(asset.id, (a) => ({
@@ -169,14 +223,8 @@ export function PaidMedia() {
                         />
                       </div>
                       <div>
-                        <FieldLabel
-                          htmlFor={`pm-specs-${asset.id}`}
-                          hint="Small line under the name (sizes, format, etc.)"
-                        >
-                          Subtitle
-                        </FieldLabel>
+                        <FieldLabel>Subtitle</FieldLabel>
                         <TextInput
-                          id={`pm-specs-${asset.id}`}
                           value={asset.specs}
                           onChange={(e) =>
                             updateAsset(asset.id, (a) => ({
@@ -189,21 +237,18 @@ export function PaidMedia() {
                       </div>
                     </div>
                   )}
-
                   <div>
-                    <FieldLabel htmlFor={`pm-desc-${asset.id}`}>
-                      Description
-                    </FieldLabel>
+                    <FieldLabel>Description</FieldLabel>
                     <TextArea
-                      id={`pm-desc-${asset.id}`}
                       value={asset.notes}
+                      disabled={!canEdit}
                       onChange={(e) =>
                         updateAsset(asset.id, (a) => ({
                           ...a,
                           notes: e.target.value,
                         }))
                       }
-                      placeholder="Headlines, primary text, CTAs, timing, or other details…"
+                      placeholder={placeholder}
                       className="min-h-[80px]"
                       rows={3}
                     />
