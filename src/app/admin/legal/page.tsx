@@ -10,7 +10,6 @@ import {
   updateLegalTemplate,
   type LegalTemplateRow,
 } from "@/lib/supabase/legalTemplatesApi";
-import { useBriefStore } from "@/store/briefStore";
 import { FileText, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 
 function emptyForm() {
@@ -34,10 +33,6 @@ function LegalAdminPanel() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-
-  const brief = useBriefStore((s) => s.brief);
-  const patch = useBriefStore((s) => s.patch);
-  const promoName = brief.promoName || "";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,35 +102,6 @@ function LegalAdminPanel() {
     } finally {
       setBusy(false);
     }
-  };
-
-  /** Apply current form legal text to the open brief only (does not change shared library). */
-  const saveForThisBriefOnly = () => {
-    if (!form.body.trim()) {
-      setError("Legal text is required to save on this brief.");
-      return;
-    }
-    const libraryBody = editingId
-      ? rows.find((r) => r.id === editingId)?.body.trim()
-      : undefined;
-    const stillMatches =
-      !!libraryBody && libraryBody === form.body.trim() && !!form.slug.trim();
-
-    patch("legal", {
-      ...brief.legal,
-      templateId: stillMatches ? form.slug.trim() : "custom",
-      legalText: form.body,
-    });
-    flash(
-      stillMatches
-        ? `Brief legal text matches “${form.label || form.slug}”.`
-        : `Saved legal text for this brief only${
-            promoName ? ` (“${promoName}”)` : ""
-          }. Shared templates were not changed.`
-    );
-    setShowForm(false);
-    setEditingId(null);
-    setForm(emptyForm());
   };
 
   const onDelete = async (row: LegalTemplateRow) => {
@@ -219,16 +185,9 @@ function LegalAdminPanel() {
           <p className="mt-1 text-violet-900/90">
             <strong>Add template for everyone</strong> creates a new Legal chip
             for all users. Open a template and use{" "}
-            <strong>Save for everyone</strong> to update the shared library, or{" "}
-            <strong>Save for this brief only</strong> to put this text on the
-            brief you currently have open in the builder
-            {promoName ? (
-              <>
-                {" "}
-                (<em>{promoName}</em>)
-              </>
-            ) : null}
-            — without changing the library.
+            <strong>Save for everyone</strong> to update the shared library.
+            To change legal text on a single promo only, use{" "}
+            <strong>Edit this brief</strong> on the Legal tab.
           </p>
           <p className="mt-2 text-xs text-violet-800/80">
             <strong>Slug</strong> is a short id (e.g. <code>bogoLoyalty</code>).
@@ -281,7 +240,7 @@ function LegalAdminPanel() {
                     </h3>
                     <p className="text-xs text-stone-500 mt-1">
                       {editingId
-                        ? "Save for everyone updates the library. Save for this brief only updates the open brief."
+                        ? "Save for everyone updates the shared library for all users and new briefs."
                         : "Creates a new shared chip on the Legal tab for all users."}
                     </p>
                   </div>
@@ -386,34 +345,23 @@ function LegalAdminPanel() {
                   </label>
                 </div>
               </div>
-              <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 flex flex-col gap-2">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4" />
-                    {busy
-                      ? "Saving…"
-                      : editingId
-                        ? "Save for everyone"
-                        : "Add template for everyone"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy || !form.body.trim()}
-                    onClick={saveForThisBriefOnly}
-                    className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white hover:bg-campero-orange-dark disabled:opacity-50"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save for this brief only
-                  </button>
-                </div>
+              <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" />
+                  {busy
+                    ? "Saving…"
+                    : editingId
+                      ? "Save for everyone"
+                      : "Add template for everyone"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700"
+                  className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700"
                 >
                   Cancel
                 </button>
