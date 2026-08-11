@@ -210,7 +210,7 @@ function LegalAdminPanel() {
             for all users. Open a template and use{" "}
             <strong>Save for everyone</strong> to update the shared library. To
             change legal text on a single promo only, use{" "}
-            <strong>Edit this brief</strong> on the Legal tab.
+            <strong>Edit for this brief only</strong> on the Legal tab.
           </p>
         </section>
 

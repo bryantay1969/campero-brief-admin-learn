@@ -274,7 +274,7 @@ export function LegalSection() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-campero-orange/40 bg-orange-50 px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-orange-100"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Edit this brief
+                Edit for this brief only
               </button>
               {!matchesSelectedTemplate && selectedTemplate && (
                 <button

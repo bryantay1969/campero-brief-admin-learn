@@ -4,17 +4,17 @@ import { useState } from "react";
 import { useBriefStore } from "@/store/briefStore";
 import { SectionCard } from "@/components/ui/FormControls";
 import { BriefPreview } from "@/components/preview/BriefPreview";
-import { briefToMarkdown } from "@/lib/markdown";
 import { downloadBriefPdf } from "@/lib/pdf";
 import { defaultBriefName } from "@/lib/briefIds";
+import { briefShareUrl } from "@/lib/supabase/briefsApi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   CheckCircle2,
-  Copy,
   Download,
   Eye,
   FileText,
   FolderOpen,
+  Link2,
   Loader2,
   Save,
 } from "lucide-react";
@@ -60,13 +60,21 @@ export function ReviewGenerate() {
     }
   };
 
-  const handleCopy = async () => {
+  const handleCopyLink = async () => {
+    if (!activeBriefId) {
+      window.alert(
+        "Save this brief to the library first, then you can copy a shareable link."
+      );
+      return;
+    }
+    const url = briefShareUrl(activeBriefId);
     try {
-      await navigator.clipboard.writeText(briefToMarkdown(brief));
+      await navigator.clipboard.writeText(url);
       setCopyStatus("ok");
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch {
-      setCopyStatus("err");
+      window.prompt("Copy this brief link:", url);
+      setCopyStatus("ok");
       setTimeout(() => setCopyStatus("idle"), 2000);
     }
   };
@@ -183,19 +191,24 @@ export function ReviewGenerate() {
         </button>
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={() => void handleCopyLink()}
           className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-campero-orange/40 hover:bg-orange-50 transition-colors"
+          title={
+            activeBriefId
+              ? briefShareUrl(activeBriefId)
+              : "Save the brief first to get a shareable link"
+          }
         >
           {copyStatus === "ok" ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           ) : (
-            <Copy className="h-4 w-4" />
+            <Link2 className="h-4 w-4" />
           )}
           {copyStatus === "ok"
-            ? "Copied!"
+            ? "Link copied!"
             : copyStatus === "err"
               ? "Copy failed"
-              : "Copy as Markdown"}
+              : "Copy link"}
         </button>
       </div>
 
