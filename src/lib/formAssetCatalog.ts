@@ -1,5 +1,7 @@
 /** Shared catalog types and merge helpers for Digital / Paid / Physical / PR. */
 
+import { isBriefOnlyAssetId } from "./briefOnlyIds";
+
 export type CatalogSection = "digital" | "paid" | "physical" | "pr";
 
 export type FormAssetCatalogDef = {
@@ -55,7 +57,10 @@ export type ListAssetLike = {
   linkHref?: string;
 };
 
-/** Merge catalog into a title/specs/notes list (digital/paid-like). */
+/**
+ * Merge catalog into a title/specs/notes list (digital/paid-like).
+ * Only updates the brief in memory — never writes admin catalog tables.
+ */
 export function mergeListWithCatalog<T extends ListAssetLike>(
   briefAssets: T[],
   catalog: FormAssetCatalogDef[],
@@ -73,9 +78,10 @@ export function mergeListWithCatalog<T extends ListAssetLike>(
   const byId = new Map(briefAssets.filter((a) => a?.id).map((a) => [a.id, a]));
   const catalogSlugs = new Set(catalog.map((c) => c.slug));
 
+  // Catalog rows: admin-controlled labels; brief keeps enabled + notes.
   const merged = catalog.map((c) => {
     const existing = byId.get(c.slug);
-    if (existing) {
+    if (existing && !isBriefOnlyAssetId(existing.id)) {
       return factory({
         id: c.slug,
         title: c.title,
@@ -102,8 +108,10 @@ export function mergeListWithCatalog<T extends ListAssetLike>(
     });
   });
 
+  // Brief-only rows: keep full local data; never folded into catalog
   const custom = briefAssets.filter(
-    (a) => a?.id && !catalogSlugs.has(a.id)
+    (a) =>
+      a?.id && (isBriefOnlyAssetId(a.id) || !catalogSlugs.has(a.id))
   ) as T[];
 
   return [...merged, ...custom];
@@ -137,7 +145,7 @@ export function mergePhysicalWithCatalog<
 
   const merged = catalog.map((c) => {
     const existing = byId.get(c.slug);
-    if (existing) {
+    if (existing && !isBriefOnlyAssetId(existing.id)) {
       return factory({
         id: c.slug,
         label: c.title,
@@ -165,7 +173,8 @@ export function mergePhysicalWithCatalog<
   });
 
   const custom = briefAssets.filter(
-    (a) => a?.id && !catalogSlugs.has(a.id)
+    (a) =>
+      a?.id && (isBriefOnlyAssetId(a.id) || !catalogSlugs.has(a.id))
   ) as T[];
 
   return [...merged, ...custom];
@@ -175,5 +184,6 @@ export function isInCatalog(
   id: string,
   catalog: FormAssetCatalogDef[]
 ): boolean {
+  if (isBriefOnlyAssetId(id)) return false;
   return catalog.some((c) => c.slug === id || c.id === id);
 }

@@ -1,10 +1,8 @@
 import type { ITAssetItem, ITElements, LegacyITElements } from "./types";
+import { isBriefOnlyAssetId, newBriefOnlyId } from "./briefOnlyIds";
 
 function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return newBriefOnlyId();
 }
 
 export function createITAsset(
@@ -100,6 +98,7 @@ export function isCustomITAsset(
   asset: ITAssetItem,
   catalog?: ITCatalogDef[]
 ): boolean {
+  if (isBriefOnlyAssetId(asset.id)) return true;
   if (catalog && catalog.length > 0) {
     return !isCatalogITAsset(asset, catalog);
   }
@@ -179,7 +178,11 @@ export function mergeITElementsWithCatalog(
   });
 
   const custom = briefAssets.filter(
-    (a) => a && a.id && a.id !== "nonFoodItAlert" && !catalogSlugs.has(a.id)
+    (a) =>
+      a &&
+      a.id &&
+      a.id !== "nonFoodItAlert" &&
+      (isBriefOnlyAssetId(a.id) || !catalogSlugs.has(a.id))
   );
 
   return [...merged, ...custom.map((a) => createITAsset({ ...a, title: a.title || "" }))];

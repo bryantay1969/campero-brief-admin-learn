@@ -5,12 +5,10 @@ import type {
 } from "./types";
 import type { FormAssetCatalogDef } from "./formAssetCatalog";
 import { mergeListWithCatalog } from "./formAssetCatalog";
+import { isBriefOnlyAssetId, newBriefOnlyId } from "./briefOnlyIds";
 
 function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return newBriefOnlyId();
 }
 
 export function createPaidMediaAsset(
@@ -40,6 +38,7 @@ export function isCustomPaidMediaAsset(
   asset: PaidMediaAssetItem,
   catalogSlugs?: Set<string>
 ): boolean {
+  if (isBriefOnlyAssetId(asset.id)) return true;
   if (catalogSlugs && catalogSlugs.size > 0) {
     return !catalogSlugs.has(asset.id);
   }

@@ -13,11 +13,10 @@ import { createDefaultPaidMedia } from "./paidMedia";
 import type { FormAssetCatalogDef } from "./formAssetCatalog";
 import { mergePhysicalWithCatalog } from "./formAssetCatalog";
 
+import { isBriefOnlyAssetId, newBriefOnlyId } from "./briefOnlyIds";
+
 function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return newBriefOnlyId();
 }
 
 export const BUILT_IN_PHYSICAL_ASSET_IDS = new Set([
@@ -44,6 +43,7 @@ export function isCustomPhysicalAsset(
   asset: PhysicalAsset,
   catalogSlugs?: Set<string>
 ): boolean {
+  if (isBriefOnlyAssetId(asset.id)) return true;
   if (catalogSlugs && catalogSlugs.size > 0) {
     return !catalogSlugs.has(asset.id);
   }

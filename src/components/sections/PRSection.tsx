@@ -16,13 +16,7 @@ import { fetchCatalogForForm } from "@/lib/supabase/formAssetCatalogApi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
-
-function newCustomId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `pr-custom-${Date.now()}`;
-}
+import { newBriefOnlyId } from "@/lib/briefOnlyIds";
 
 export function PRSection() {
   const brief = useBriefStore((s) => s.brief);
@@ -116,7 +110,7 @@ export function PRSection() {
     setCustom([
       ...custom,
       {
-        id: newCustomId(),
+        id: newBriefOnlyId(),
         title: "",
         specs: "",
         enabled: true,
@@ -124,6 +118,7 @@ export function PRSection() {
         priority: "",
         linkLabel: "",
         linkHref: "",
+        notesPlaceholder: "",
       },
     ]);
   };
