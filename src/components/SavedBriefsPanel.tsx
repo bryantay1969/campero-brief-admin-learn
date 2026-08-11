@@ -219,12 +219,13 @@ export function SavedBriefsPanel() {
   const handleNew = () => {
     if (isDirty) {
       const ok = window.confirm(
-        "Start a new blank brief? Unsaved changes to the current form will be lost from the working draft (library copies stay)."
+        "Start a new empty brief? Unsaved edits will be discarded from the form (saved library copies stay)."
       );
       if (!ok) return;
     }
     newBrief();
-    flash("New blank brief");
+    setShow(false);
+    flash("New empty brief ready");
   };
 
   return (

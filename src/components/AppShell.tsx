@@ -63,6 +63,7 @@ export function AppShell() {
   const brief = useBriefStore((s) => s.brief);
   const library = useBriefStore((s) => s.library);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
+  const formInstanceId = useBriefStore((s) => s.formInstanceId);
   const { isViewer, canEdit } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -240,7 +241,7 @@ export function AppShell() {
               )}
 
               <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-4xl w-full mx-auto">
-                <SectionBody id={activeSection} />
+                <SectionBody key={formInstanceId} id={activeSection} />
 
                 <div className="mt-6 flex items-center justify-between gap-3">
                   <button

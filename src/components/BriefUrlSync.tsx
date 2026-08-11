@@ -11,6 +11,7 @@ import {
 
 /**
  * Keeps the browser URL in sync with the open brief and opens `?brief=<id>` links.
+ * Respects `preferNewDraft` so “New empty brief” is not undone by the URL.
  */
 function BriefUrlSyncInner() {
   const router = useRouter();
@@ -20,6 +21,7 @@ function BriefUrlSyncInner() {
   const hydrated = useBriefStore((s) => s.hydrated);
   const library = useBriefStore((s) => s.library);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
+  const preferNewDraft = useBriefStore((s) => s.preferNewDraft);
   const openFromLibrary = useBriefStore((s) => s.openFromLibrary);
   const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
 
@@ -29,9 +31,23 @@ function BriefUrlSyncInner() {
   const openedParamRef = useRef<string | null>(null);
   const skipNextUrlWrite = useRef(false);
 
-  // Open brief from ?brief=...
+  // User started a new draft — strip ?brief= and never re-open from URL
   useEffect(() => {
     if (!hydrated || authLoading) return;
+    if (!preferNewDraft) return;
+
+    openedParamRef.current = null;
+    skipNextUrlWrite.current = true;
+    if (briefParam) {
+      router.replace("/", { scroll: false });
+    }
+  }, [preferNewDraft, briefParam, hydrated, authLoading, router]);
+
+  // Open brief from ?brief=... (only when not in new-draft mode)
+  useEffect(() => {
+    if (!hydrated || authLoading) return;
+    if (preferNewDraft) return;
+
     if (!briefParam) {
       openedParamRef.current = null;
       return;
@@ -44,18 +60,7 @@ function BriefUrlSyncInner() {
       return;
     }
 
-    // Prefer already-loaded library (local or after cloud refresh)
     if (openFromLibrary(briefParam)) {
-      openedParamRef.current = briefParam;
-      skipNextUrlWrite.current = true;
-      setStatus(null);
-      return;
-    }
-
-    // Wait until cloud library has had a chance to load
-    if (cloudEnabled && library.length === 0) {
-      // Still try direct fetch below
-    } else if (openFromLibrary(briefParam)) {
       openedParamRef.current = briefParam;
       skipNextUrlWrite.current = true;
       setStatus(null);
@@ -74,8 +79,13 @@ function BriefUrlSyncInner() {
     setStatus("Opening brief…");
     void (async () => {
       try {
+        // Re-check draft mode after await
+        if (useBriefStore.getState().preferNewDraft) return;
+
         const rec = await fetchCloudBriefById(briefParam);
         if (cancelled) return;
+        if (useBriefStore.getState().preferNewDraft) return;
+
         if (!rec) {
           setStatus(
             "Brief not found or you don’t have access. Check the link or ask an admin."
@@ -106,6 +116,7 @@ function BriefUrlSyncInner() {
     cloudEnabled,
     library,
     activeBriefId,
+    preferNewDraft,
     openFromLibrary,
     applyCloudSave,
   ]);
@@ -113,6 +124,13 @@ function BriefUrlSyncInner() {
   // Keep URL matching the open library brief (for easy sharing)
   useEffect(() => {
     if (!hydrated || authLoading) return;
+    if (preferNewDraft) {
+      // Stay on clean URL while drafting
+      if (searchParams.get("brief")) {
+        router.replace("/", { scroll: false });
+      }
+      return;
+    }
     if (skipNextUrlWrite.current) {
       skipNextUrlWrite.current = false;
       return;
@@ -124,10 +142,16 @@ function BriefUrlSyncInner() {
         router.replace(briefSharePath(activeBriefId), { scroll: false });
       }
     } else if (current) {
-      // Draft / new brief — drop the param
       router.replace("/", { scroll: false });
     }
-  }, [activeBriefId, hydrated, authLoading, router, searchParams]);
+  }, [
+    activeBriefId,
+    hydrated,
+    authLoading,
+    router,
+    searchParams,
+    preferNewDraft,
+  ]);
 
   if (!status) return null;
 

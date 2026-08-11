@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useBriefStore } from "@/store/briefStore";
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
   BookOpen,
+  Check,
   Eraser,
   FilePlus2,
   FileStack,
@@ -56,24 +58,51 @@ export function LeftToolbar({
   } = useAuth();
 
   const active = library.find((b) => b.id === activeBriefId);
+  const preferNewDraft = useBriefStore((s) => s.preferNewDraft);
+  const [newBriefFlash, setNewBriefFlash] = useState(false);
+  const [newBriefBusy, setNewBriefBusy] = useState(false);
 
   const handleNewBrief = async () => {
     if (!canEdit) {
       window.alert("View only — you cannot create a new brief.");
       return;
     }
-    if (isDirty) {
+    if (newBriefBusy) return;
+
+    const hasOpenBrief = !!activeBriefId;
+    const hasTypedContent =
+      !!brief.promoName.trim() ||
+      !!brief.projectLead.trim() ||
+      !!brief.locations.trim() ||
+      brief.messagingBullets.some((b) => b.text.trim()) ||
+      !!brief.legal.legalText.trim();
+
+    if (isDirty && (hasOpenBrief || hasTypedContent)) {
       const ok = window.confirm(
-        "Start a new empty brief? Current changes will be saved first, then you’ll get a blank form."
+        "Start a new empty brief?\n\n• Your current brief will be saved first (if it has content)\n• Then you’ll get a blank form\n• The old brief stays in My briefs"
       );
       if (!ok) return;
+      setNewBriefBusy(true);
       try {
         await onRetrySave();
       } catch {
         // still allow new brief
       }
+    } else if (hasOpenBrief || hasTypedContent) {
+      const ok = window.confirm(
+        "Start a new empty brief? The form will be cleared. Your saved briefs stay in My briefs."
+      );
+      if (!ok) {
+        setNewBriefBusy(false);
+        return;
+      }
     }
+
+    setNewBriefBusy(true);
     newBrief();
+    setNewBriefFlash(true);
+    window.setTimeout(() => setNewBriefFlash(false), 2200);
+    setNewBriefBusy(false);
   };
 
   const handleLoadSample = () => {
@@ -151,7 +180,11 @@ export function LeftToolbar({
           <p className="text-xs font-semibold text-stone-800 truncate">
             {active?.name ||
               brief.promoName.trim() ||
-              (isViewer ? "Browsing" : "Untitled draft")}
+              (preferNewDraft || !activeBriefId
+                ? isViewer
+                  ? "Browsing"
+                  : "New empty brief"
+                : "Untitled draft")}
           </p>
           <div className="mt-1 flex items-center gap-1.5 text-[11px]">
             <span
@@ -205,14 +238,25 @@ export function LeftToolbar({
         {canEdit && (
           <button
             type="button"
+            disabled={newBriefBusy}
             onClick={() => void handleNewBrief()}
             className={cn(
               navBtn,
-              "bg-campero-orange text-white shadow-sm hover:bg-campero-orange-dark"
+              newBriefFlash
+                ? "border border-emerald-300 bg-emerald-50 text-emerald-900"
+                : "border border-dashed border-campero-orange/50 bg-orange-50/50 text-campero-orange hover:bg-orange-50 hover:border-campero-orange"
             )}
           >
-            <FilePlus2 className="h-3.5 w-3.5 shrink-0" />
-            New empty brief
+            {newBriefFlash ? (
+              <Check className="h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <FilePlus2 className="h-3.5 w-3.5 shrink-0" />
+            )}
+            {newBriefBusy
+              ? "Starting…"
+              : newBriefFlash
+                ? "Empty brief ready"
+                : "New empty brief"}
           </button>
         )}
         <button

@@ -110,6 +110,13 @@ interface BriefState {
   activeBriefId: string | null;
   /** True when form differs from last explicit library save (or never saved). */
   isDirty: boolean;
+  /**
+   * When true, ignore `?brief=` deep links and clear them — used after
+   * “New empty brief” so the previous brief is not re-opened from the URL.
+   */
+  preferNewDraft: boolean;
+  /** Bumps on new brief so the form remounts cleanly. */
+  formInstanceId: number;
 
   activeSection: SectionId;
   showGuidelines: boolean;
@@ -170,6 +177,8 @@ export const useBriefStore = create<BriefState>()(
       library: [],
       activeBriefId: null,
       isDirty: false,
+      preferNewDraft: false,
+      formInstanceId: 0,
       activeSection: "overview",
       showGuidelines: false,
       showPreview: false,
@@ -201,33 +210,39 @@ export const useBriefStore = create<BriefState>()(
         }),
 
       loadSample: () =>
-        set({
+        set((s) => ({
           brief: createSampleBrief(),
           activeBriefId: null,
           isDirty: true,
+          preferNewDraft: true,
+          formInstanceId: s.formInstanceId + 1,
           activeSection: "overview",
           showPreview: false,
-        }),
+        })),
 
       clearForm: () =>
-        set({
-          brief: createEmptyBrief(),
-          activeBriefId: null,
-          isDirty: true,
-          activeSection: "overview",
-          showPreview: false,
-        }),
-
-      newBrief: () =>
-        set({
+        set((s) => ({
           brief: createEmptyBrief(),
           activeBriefId: null,
           isDirty: false,
+          preferNewDraft: true,
+          formInstanceId: s.formInstanceId + 1,
+          activeSection: "overview",
+          showPreview: false,
+        })),
+
+      newBrief: () =>
+        set((s) => ({
+          brief: createEmptyBrief(),
+          activeBriefId: null,
+          isDirty: false,
+          preferNewDraft: true,
+          formInstanceId: s.formInstanceId + 1,
           activeSection: "overview",
           showPreview: false,
           showLibrary: false,
           showGuidelines: false,
-        }),
+        })),
 
       saveToLibrary: (name) => {
         const state = get();
@@ -259,6 +274,7 @@ export const useBriefStore = create<BriefState>()(
                 )
               ),
               isDirty: false,
+              preferNewDraft: false,
             });
             return updated;
           }
@@ -276,6 +292,7 @@ export const useBriefStore = create<BriefState>()(
           library: sortLibrary([created, ...state.library]),
           activeBriefId: created.id,
           isDirty: false,
+          preferNewDraft: false,
         });
         return created;
       },
@@ -298,6 +315,7 @@ export const useBriefStore = create<BriefState>()(
           library: sortLibrary([created, ...state.library]),
           activeBriefId: created.id,
           isDirty: false,
+          preferNewDraft: false,
         });
         return created;
       },
@@ -306,18 +324,20 @@ export const useBriefStore = create<BriefState>()(
         const record = get().library.find((b) => b.id === id);
         if (!record) return false;
         const brief = normalizeBrief(record.brief);
-        set({
+        set((s) => ({
           brief,
           // Keep library entry on current schema when opened
-          library: get().library.map((b) =>
+          library: s.library.map((b) =>
             b.id === id ? { ...b, brief } : b
           ),
           activeBriefId: record.id,
           isDirty: false,
+          preferNewDraft: false,
+          formInstanceId: s.formInstanceId + 1,
           activeSection: "overview",
           showPreview: false,
           showLibrary: false,
-        });
+        }));
         return true;
       },
 
@@ -405,11 +425,25 @@ export const useBriefStore = create<BriefState>()(
           brief: stamped,
         };
         const state = get();
+        // Don't re-attach a cloud brief if the user just started a new draft
+        // (e.g. URL deep-link race after “New empty brief”).
+        if (state.preferNewDraft && state.activeBriefId === null) {
+          const exists = state.library.some((b) => b.id === next.id);
+          set({
+            library: sortLibrary(
+              exists
+                ? state.library.map((b) => (b.id === next.id ? next : b))
+                : [next, ...state.library]
+            ),
+          });
+          return;
+        }
         const exists = state.library.some((b) => b.id === next.id);
         set({
           brief: stamped,
           activeBriefId: next.id,
           isDirty: false,
+          preferNewDraft: false,
           library: sortLibrary(
             exists
               ? state.library.map((b) => (b.id === next.id ? next : b))
