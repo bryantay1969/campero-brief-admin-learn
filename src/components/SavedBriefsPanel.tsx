@@ -5,6 +5,7 @@ import { useBriefStore } from "@/store/briefStore";
 import { formatDisplayDate } from "@/lib/utils";
 import { downloadBriefJson, parseImportFile } from "@/lib/briefExport";
 import { defaultBriefName } from "@/lib/briefIds";
+import { downloadBriefPdf } from "@/lib/pdf";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   deleteCloudBrief,
@@ -18,6 +19,7 @@ import {
   Download,
   FolderOpen,
   Link2,
+  Loader2,
   Pencil,
   Plus,
   Save,
@@ -53,6 +55,7 @@ export function SavedBriefsPanel() {
   const [saveName, setSaveName] = useState("");
   const [showSaveAs, setShowSaveAs] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const flash = (msg: string) => {
@@ -578,13 +581,31 @@ export function SavedBriefsPanel() {
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
-                              downloadBriefJson(item.brief, item.name)
-                            }
-                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                            disabled={pdfBusyId === item.id}
+                            onClick={async () => {
+                              setPdfBusyId(item.id);
+                              try {
+                                await downloadBriefPdf(item.brief);
+                                flash("PDF downloaded");
+                              } catch (e) {
+                                flash(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "PDF download failed"
+                                );
+                              } finally {
+                                setPdfBusyId(null);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                            title="Download this brief as PDF"
                           >
-                            <Download className="h-3 w-3" />
-                            Export
+                            {pdfBusyId === item.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Download className="h-3 w-3" />
+                            )}
+                            Download PDF
                           </button>
                           <button
                             type="button"
@@ -606,7 +627,8 @@ export function SavedBriefsPanel() {
 
         <footer className="border-t border-stone-100 px-5 py-3 text-[11px] text-stone-400">
           <strong>Copy preview link</strong> shares a public, view-only page
-          (no login, no edit). Export JSON still works for offline backup.
+          (no login, no edit). Use <strong>Download PDF</strong> on a brief for
+          a PDF file.
         </footer>
 
         {toast && (
