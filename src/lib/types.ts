@@ -151,6 +151,18 @@ export interface LegacyPaidMedia {
   };
 }
 
+/** Brief-only PR row (not from the shared catalog). */
+export interface PRCustomAsset {
+  id: string;
+  title: string;
+  specs: string;
+  enabled: boolean;
+  notes: string;
+  priority?: string;
+  linkLabel?: string;
+  linkHref?: string;
+}
+
 export interface PRAssets {
   blogPost: AssetItem & {
     imageSpecs: string;
@@ -158,6 +170,8 @@ export interface PRAssets {
   pressRelease: AssetItem & {
     bySpm: boolean;
   };
+  /** Optional one-off PR items for this brief only */
+  custom?: PRCustomAsset[];
 }
 
 /** In-store / physical asset — name, subtitle, description (same pattern as Digital). */

@@ -23,7 +23,12 @@ export function sectionComplete(id: SectionId, brief: PromoBrief): boolean {
         brief.paidMedia.some((a) => a.enabled)
       );
     case "pr":
-      return brief.pr.blogPost.enabled || brief.pr.pressRelease.enabled;
+      return (
+        brief.pr.blogPost.enabled ||
+        brief.pr.pressRelease.enabled ||
+        (Array.isArray(brief.pr.custom) &&
+          brief.pr.custom.some((c) => c.enabled))
+      );
     case "physical":
       return (
         Array.isArray(brief.physicalAssets) &&

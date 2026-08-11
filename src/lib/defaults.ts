@@ -187,6 +187,7 @@ export function createEmptyBrief(): PromoBrief {
         notes: "",
         bySpm: false,
       },
+      custom: [],
     },
 
     physicalAssets: createPhysicalAssets(),

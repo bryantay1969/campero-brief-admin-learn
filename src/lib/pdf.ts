@@ -282,6 +282,15 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
     "Press Release – By SPM",
     `${PR_PRESS_RELEASE_SUBTITLE}${pr.pressRelease.notes ? ` · ${pr.pressRelease.notes}` : ""}`
   );
+  const prCustom = Array.isArray(pr.custom) ? pr.custom : [];
+  prCustom.forEach((a) => {
+    checkLine(
+      a.enabled,
+      a.title || "Untitled PR item",
+      [a.specs, a.notes].filter((p) => p && String(p).trim()).join(" · ") ||
+        undefined
+    );
+  });
 
   sectionTitle("Physical / In-Store Assets");
   const physical = Array.isArray(brief.physicalAssets)

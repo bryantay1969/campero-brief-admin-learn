@@ -230,6 +230,17 @@ export function BriefPreview({ brief }: { brief: PromoBrief }) {
               : PR_PRESS_RELEASE_SUBTITLE
           }
         />
+        {(Array.isArray(pr.custom) ? pr.custom : []).map((a) => (
+          <AssetLine
+            key={a.id}
+            on={a.enabled}
+            title={a.title || "Untitled PR item"}
+            detail={
+              [a.specs, a.notes].filter((p) => p && String(p).trim()).join(" · ") ||
+              undefined
+            }
+          />
+        ))}
 
         {/* Physical */}
         <SectionTitle>Physical / In-Store Assets</SectionTitle>
