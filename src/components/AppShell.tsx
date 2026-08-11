@@ -257,8 +257,9 @@ export function AppShell() {
                       type="button"
                       onClick={() => setActiveSection(next.id)}
                       className="inline-flex items-center gap-1.5 rounded-xl bg-campero-orange px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-200 hover:bg-campero-orange-dark"
+                      title={`Continue to ${next.shortLabel}`}
                     >
-                      {next.shortLabel}
+                      Save and Continue
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   ) : (
