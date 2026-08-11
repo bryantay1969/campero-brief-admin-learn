@@ -365,7 +365,7 @@ function ITAdminPanel() {
                   <label className="text-xs font-semibold text-stone-600">
                     Description hint
                   </label>
-                  <input
+                  <textarea
                     value={form.notes_placeholder}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -373,7 +373,8 @@ function ITAdminPanel() {
                         notes_placeholder: e.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    rows={3}
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed"
                     placeholder="Shown as empty-field hint on the form"
                   />
                   <p className="mt-1 text-[11px] text-stone-400">
@@ -393,7 +394,7 @@ function ITAdminPanel() {
                       }))
                     }
                     rows={6}
-                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-serif leading-relaxed"
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed"
                     placeholder="Default text when this asset is added to a brief"
                   />
                   <p className="mt-1 text-[11px] text-stone-400">

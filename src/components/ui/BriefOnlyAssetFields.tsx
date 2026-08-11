@@ -78,11 +78,13 @@ export function BriefOnlyAssetFields({
       </div>
       <div>
         <FieldLabel>Description hint</FieldLabel>
-        <TextInput
+        <TextArea
           value={value.notesPlaceholder}
           disabled={disabled}
           onChange={(e) => set({ notesPlaceholder: e.target.value })}
           placeholder="Placeholder when description is empty"
+          className="min-h-[72px]"
+          rows={3}
         />
       </div>
       <div>
@@ -95,8 +97,8 @@ export function BriefOnlyAssetFields({
             value.notesPlaceholder.trim() ||
             "Default text for this asset on the brief"
           }
-          className="min-h-[80px]"
-          rows={3}
+          className="min-h-[100px]"
+          rows={5}
         />
       </div>
     </div>

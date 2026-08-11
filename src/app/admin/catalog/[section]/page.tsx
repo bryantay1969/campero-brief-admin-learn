@@ -365,7 +365,7 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
                   <label className="text-xs font-semibold text-stone-600">
                     Description hint
                   </label>
-                  <input
+                  <textarea
                     value={form.notes_placeholder}
                     onChange={(e) =>
                       setForm((f) => ({
@@ -373,7 +373,9 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
                         notes_placeholder: e.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    rows={3}
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed"
+                    placeholder="Placeholder when the description box is empty"
                   />
                 </div>
                 <div>
@@ -389,7 +391,8 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
                       }))
                     }
                     rows={5}
-                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed"
+                    placeholder="Default text when this asset is added to a brief"
                   />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
