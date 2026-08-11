@@ -347,7 +347,7 @@ function LegalAdminPanel() {
                   {busy
                     ? "Saving…"
                     : editingId
-                      ? "Save global template"
+                      ? "Save for everyone"
                       : "Create for everyone"}
                 </button>
                 <button

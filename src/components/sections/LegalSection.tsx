@@ -274,8 +274,8 @@ export function LegalSection() {
         <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-950">
           <strong>Admin · global templates.</strong> Edits and new templates
           update the shared library for <strong>everyone</strong>. New briefs
-          that pick a chip get the latest text. Use “one-off on this brief”
-          only when a single promo needs different legal language.
+          that pick a chip get the latest text. Use “Save for this brief only”
+          when a single promo needs different legal language.
         </div>
       )}
 
@@ -378,7 +378,7 @@ export function LegalSection() {
                   <>
                     Differs from shared template{" "}
                     <strong>{selectedTemplate.label}</strong>{" "}
-                    <span className="text-stone-500">(one-off on this brief)</span>
+                    <span className="text-stone-500">(this brief only)</span>
                   </>
                 ) : (
                   <>
@@ -393,7 +393,7 @@ export function LegalSection() {
                 <Pencil className="h-3.5 w-3.5" />
                 {editMode === "shared" ? (
                   <span className="text-violet-800">
-                    Editing global template
+                    Editing for everyone
                     {selectedTemplate
                       ? ` “${selectedTemplate.label}”`
                       : ""}{" "}
@@ -401,7 +401,7 @@ export function LegalSection() {
                   </span>
                 ) : (
                   <span className="text-amber-900">
-                    One-off edit for this brief only
+                    Editing for this brief only
                     {draftDirty ? " · unsaved" : ""}
                   </span>
                 )}
@@ -418,7 +418,7 @@ export function LegalSection() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
                 >
                   <Pencil className="h-3.5 w-3.5" />
-                  Edit global template
+                  Edit for everyone
                 </button>
               )}
               <button
@@ -432,7 +432,7 @@ export function LegalSection() {
                 )}
               >
                 <Pencil className="h-3.5 w-3.5" />
-                {canAdmin ? "One-off on this brief" : "Edit legal text"}
+                {canAdmin ? "Save for this brief only" : "Edit legal text"}
               </button>
               {!matchesSelectedTemplate && selectedTemplate && (
                 <button
@@ -481,7 +481,7 @@ export function LegalSection() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
-                  {saving ? "Saving…" : "Save global template"}
+                  {saving ? "Saving…" : "Save for everyone"}
                 </button>
               ) : (
                 <button
@@ -490,7 +490,7 @@ export function LegalSection() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-4 py-2.5 text-sm font-bold text-white hover:bg-campero-orange-dark"
                 >
                   <Save className="h-4 w-4" />
-                  Save on this brief only
+                  Save for this brief only
                 </button>
               )}
               <button
