@@ -16,7 +16,8 @@ export function FormNav() {
 
   return (
     <nav className="sticky top-[53px] z-30 border-b border-stone-200 bg-white/95 backdrop-blur-md">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+      {/* Full width of main column so tabs are not squeezed/cropped */}
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4 py-2.5">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-campero-orange">
@@ -27,7 +28,7 @@ export function FormNav() {
               {SECTIONS[activeIndex]?.shortLabel}
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs text-stone-500">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-stone-500 shrink-0">
             <div className="h-1.5 w-28 rounded-full bg-stone-100 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-campero-orange to-campero-yellow transition-all duration-300"
@@ -38,7 +39,11 @@ export function FormNav() {
           </div>
         </div>
 
-        <div className="flex gap-1 overflow-x-auto pb-2.5 -mx-1 px-1 scrollbar-thin">
+        <div
+          className="flex flex-wrap gap-1.5 pb-3"
+          role="tablist"
+          aria-label="Brief sections"
+        >
           {SECTIONS.map((section, i) => {
             const isActive = section.id === active;
             const done = sectionComplete(section.id, brief) && !isActive;
@@ -46,9 +51,11 @@ export function FormNav() {
               <button
                 key={section.id}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActive(section.id)}
                 className={cn(
-                  "shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
                   isActive
                     ? "bg-campero-orange text-white shadow-sm"
                     : done
@@ -57,11 +64,11 @@ export function FormNav() {
                 )}
               >
                 {done ? (
-                  <Check className="h-3 w-3" />
+                  <Check className="h-3 w-3 shrink-0" />
                 ) : (
                   <span
                     className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-full text-[10px]",
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px]",
                       isActive ? "bg-white/20" : "bg-stone-200 text-stone-600"
                     )}
                   >

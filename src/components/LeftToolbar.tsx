@@ -272,7 +272,7 @@ export function LeftToolbar({
           )}
         >
           <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-          My briefs
+          Show briefs
           {library.length > 0 && (
             <span className="ml-auto rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">
               {library.length}
