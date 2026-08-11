@@ -209,20 +209,41 @@ function LegalAdminPanel() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
             <form
               onSubmit={onSubmit}
-              className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white border border-stone-200 shadow-xl p-6 space-y-4"
+              className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl bg-white border border-stone-200 shadow-xl overflow-hidden"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold">
-                  {editingId ? "Edit template" : "Add template"}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="p-1 text-stone-400 hover:text-stone-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+              <div
+                className={
+                  editingId
+                    ? "border-b border-campero-orange/30 bg-orange-50 px-6 py-4"
+                    : "border-b border-stone-100 bg-stone-50 px-6 py-4"
+                }
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-campero-orange">
+                      {editingId ? "Editing shared template" : "New shared template"}
+                    </p>
+                    <h3 className="text-base font-bold text-stone-900 mt-0.5">
+                      {editingId
+                        ? form.label || "Untitled template"
+                        : "Add template"}
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-1">
+                      {editingId
+                        ? "Changes apply for everyone on the Legal tab after you save."
+                        : "This will appear as a quick-select chip on the Legal tab."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="p-1 text-stone-400 hover:text-stone-700"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
@@ -310,13 +331,27 @@ function LegalAdminPanel() {
                   Active (show in form)
                 </label>
               </div>
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {busy ? "Saving…" : editingId ? "Save changes" : "Create"}
-              </button>
+              </div>
+              <div className="border-t border-stone-100 bg-stone-50 px-6 py-4 flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {busy
+                    ? "Saving…"
+                    : editingId
+                      ? "Save template"
+                      : "Create template"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-white"
+                >
+                  Cancel
+                </button>
+              </div>
             </form>
           </div>
         )}
