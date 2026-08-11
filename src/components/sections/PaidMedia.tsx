@@ -191,6 +191,18 @@ export function PaidMedia() {
                         ⚡ {asset.priority}
                       </span>
                     )}
+                    {(asset.linkHref || asset.linkLabel) && (
+                      <a
+                        href={asset.linkHref || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-campero-orange hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {asset.linkLabel || "Open link"}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
                   </span>
                 </label>
                 {canEdit && custom && (

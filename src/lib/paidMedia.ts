@@ -23,6 +23,8 @@ export function createPaidMediaAsset(
     enabled: partial.enabled ?? false,
     notes: partial.notes ?? "",
     priority: partial.priority ?? "",
+    linkLabel: partial.linkLabel ?? "",
+    linkHref: partial.linkHref ?? "",
   };
 }
 
@@ -55,6 +57,8 @@ export function mergePaidWithCatalog(
       notes: p.notes,
       enabled: p.enabled,
       priority: p.priority || "",
+      linkLabel: p.linkLabel || "",
+      linkHref: p.linkHref || "",
     })
   );
 }

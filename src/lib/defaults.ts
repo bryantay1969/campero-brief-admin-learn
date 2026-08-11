@@ -61,6 +61,9 @@ export function mergePhysicalAssetsWithCatalog(
       specs: p.specs,
       notes: p.notes,
       enabled: p.enabled,
+      priority: p.priority || "",
+      linkLabel: p.linkLabel || "",
+      linkHref: p.linkHref || "",
     })
   );
 }
@@ -74,6 +77,9 @@ export function createPhysicalAsset(
     specs: partial.specs ?? "",
     enabled: partial.enabled ?? false,
     notes: partial.notes ?? "",
+    priority: partial.priority ?? "",
+    linkLabel: partial.linkLabel ?? "",
+    linkHref: partial.linkHref ?? "",
   };
 }
 

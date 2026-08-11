@@ -147,15 +147,20 @@ export function PRSection() {
                   {blog.specs}
                 </span>
               )}
+              {blog?.priorityDefault?.trim() && (
+                <span className="mt-1 inline-block text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5">
+                  ⚡ {blog.priorityDefault}
+                </span>
+              )}
               {(blog?.linkHref || blog?.linkLabel) && (
                 <a
                   href={blog.linkHref || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-campero-orange hover:underline"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-campero-orange hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {blog.linkLabel || "Specs link"}
+                  {blog.linkLabel || "Open link"}
                   <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
                 </a>
               )}
@@ -220,6 +225,23 @@ export function PRSection() {
               <span className="block text-xs text-stone-500 mt-0.5">
                 {press?.specs || "Only needed if it will be on the wire"}
               </span>
+              {press?.priorityDefault?.trim() && (
+                <span className="mt-1 inline-block text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5">
+                  ⚡ {press.priorityDefault}
+                </span>
+              )}
+              {(press?.linkHref || press?.linkLabel) && (
+                <a
+                  href={press.linkHref || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-campero-orange hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {press.linkLabel || "Open link"}
+                  <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                </a>
+              )}
             </div>
           </div>
           {pr.pressRelease.enabled && (

@@ -52,8 +52,6 @@ function slugFromTitle(title: string): string {
 
 function CatalogAdminPanel({ section }: { section: CatalogSection }) {
   const meta = CATALOG_SECTION_META[section];
-  const showPriority = section === "digital" || section === "paid";
-  const showLinks = section === "pr";
 
   const [rows, setRows] = useState<FormAssetCatalogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,16 +242,11 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
         <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 text-sm text-violet-950">
           <p className="font-semibold">Shared checklist for {meta.formTab}</p>
           <p className="mt-1 text-violet-900/90">
-            Edit <strong>name</strong>, <strong>subtitle</strong>,{" "}
-            <strong>description hint</strong>, and{" "}
-            <strong>pre-filled description</strong>
-            {showPriority ? (
-              <>
-                {" "}
-                and <strong>priority callout</strong>
-              </>
-            ) : null}
-            . Applies for everyone the next time they open the tab.
+            Same options on every catalog: <strong>name</strong>,{" "}
+            <strong>subtitle</strong>, <strong>priority callout</strong>,{" "}
+            <strong>link label / URL</strong>, <strong>description hint</strong>
+            , and <strong>pre-filled description</strong>. Applies for everyone
+            the next time they open the tab.
           </p>
         </section>
 
@@ -320,58 +313,54 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
                     placeholder="Line under the name"
                   />
                 </div>
-                {showPriority && (
-                  <div>
-                    <label className="text-xs font-semibold text-stone-600">
-                      Priority callout
-                    </label>
-                    <input
-                      value={form.priority_default}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          priority_default: e.target.value,
-                        }))
-                      }
-                      className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                      placeholder="Optional highlighted note"
-                    />
-                  </div>
-                )}
-                {showLinks && (
-                  <>
-                    <div>
-                      <label className="text-xs font-semibold text-stone-600">
-                        Link label
-                      </label>
-                      <input
-                        value={form.link_label}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            link_label: e.target.value,
-                          }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-stone-600">
-                        Link URL
-                      </label>
-                      <input
-                        value={form.link_href}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            link_href: e.target.value,
-                          }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </>
-                )}
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Priority callout
+                  </label>
+                  <input
+                    value={form.priority_default}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        priority_default: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="Optional highlighted note (e.g. due early)"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Link label
+                  </label>
+                  <input
+                    value={form.link_label}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        link_label: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="e.g. Spec sheet"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Link URL
+                  </label>
+                  <input
+                    value={form.link_href}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        link_href: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="https://…"
+                  />
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
                     Description hint
@@ -489,6 +478,11 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
                     {row.priority_default && (
                       <p className="text-[11px] text-amber-800 mt-0.5">
                         Priority: {row.priority_default}
+                      </p>
+                    )}
+                    {(row.link_label || row.link_href) && (
+                      <p className="text-[11px] text-stone-500 mt-0.5 truncate">
+                        Link: {row.link_label || row.link_href}
                       </p>
                     )}
                     {row.notes_default && (

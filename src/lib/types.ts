@@ -40,6 +40,9 @@ export interface DigitalAssetItem {
   notes: string;
   /** Optional priority callout */
   priority: string;
+  /** Optional link under the title (from shared catalog) */
+  linkLabel?: string;
+  linkHref?: string;
   fields: DigitalAssetField[];
 }
 
@@ -81,6 +84,11 @@ export interface ITAssetItem {
   enabled: boolean;
   /** Description / notes */
   notes: string;
+  /** Optional highlighted priority callout */
+  priority?: string;
+  /** Optional link under the title (from shared catalog) */
+  linkLabel?: string;
+  linkHref?: string;
 }
 
 export type ITElements = ITAssetItem[];
@@ -113,6 +121,9 @@ export interface PaidMediaAssetItem {
   notes: string;
   /** Optional highlighted priority callout */
   priority?: string;
+  /** Optional link under the title (from shared catalog) */
+  linkLabel?: string;
+  linkHref?: string;
 }
 
 export type PaidMedia = PaidMediaAssetItem[];
@@ -159,6 +170,11 @@ export interface PhysicalAsset {
   enabled: boolean;
   /** Description / production notes */
   notes: string;
+  /** Optional highlighted priority callout */
+  priority?: string;
+  /** Optional link under the title (from shared catalog) */
+  linkLabel?: string;
+  linkHref?: string;
 }
 
 /** Slug of a legal template, or "custom" when free-edited. */

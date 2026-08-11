@@ -11,6 +11,9 @@ export type ITCatalogRow = {
   specs: string;
   notes_default: string;
   notes_placeholder: string;
+  priority_default?: string;
+  link_label?: string;
+  link_href?: string;
   sort_order: number;
   is_active: boolean;
   created_at?: string;
@@ -36,6 +39,9 @@ export function rowToDef(row: ITCatalogRow): ITCatalogDef {
     specs: row.specs,
     notesDefault: row.notes_default,
     notesPlaceholder: row.notes_placeholder,
+    priorityDefault: row.priority_default || "",
+    linkLabel: row.link_label || "",
+    linkHref: row.link_href || "",
     dbId: row.id,
     sortOrder: row.sort_order,
     isActive: row.is_active,
@@ -78,6 +84,9 @@ export async function createITCatalogItem(input: {
   specs: string;
   notes_default: string;
   notes_placeholder: string;
+  priority_default?: string;
+  link_label?: string;
+  link_href?: string;
   sort_order?: number;
   is_active?: boolean;
 }): Promise<ITCatalogRow> {
@@ -97,6 +106,9 @@ export async function createITCatalogItem(input: {
       specs: input.specs.trim(),
       notes_default: input.notes_default,
       notes_placeholder: input.notes_placeholder.trim(),
+      priority_default: (input.priority_default || "").trim(),
+      link_label: (input.link_label || "").trim(),
+      link_href: (input.link_href || "").trim(),
       sort_order: input.sort_order ?? 100,
       is_active: input.is_active ?? true,
       updated_at: new Date().toISOString(),
@@ -116,6 +128,9 @@ export async function updateITCatalogItem(
     specs?: string;
     notes_default?: string;
     notes_placeholder?: string;
+    priority_default?: string;
+    link_label?: string;
+    link_href?: string;
     sort_order?: number;
     is_active?: boolean;
   }
@@ -138,6 +153,13 @@ export async function updateITCatalogItem(
   if (input.notes_placeholder !== undefined) {
     patch.notes_placeholder = input.notes_placeholder.trim();
   }
+  if (input.priority_default !== undefined) {
+    patch.priority_default = input.priority_default.trim();
+  }
+  if (input.link_label !== undefined) {
+    patch.link_label = input.link_label.trim();
+  }
+  if (input.link_href !== undefined) patch.link_href = input.link_href.trim();
   if (input.sort_order !== undefined) patch.sort_order = input.sort_order;
   if (input.is_active !== undefined) patch.is_active = input.is_active;
 

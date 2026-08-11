@@ -19,6 +19,9 @@ function emptyForm() {
     specs: "",
     notes_default: "",
     notes_placeholder: "Specs, copy, timing, or other details…",
+    priority_default: "",
+    link_label: "",
+    link_href: "",
     sort_order: 100,
     is_active: true,
   };
@@ -84,6 +87,9 @@ function ITAdminPanel() {
       specs: row.specs,
       notes_default: row.notes_default,
       notes_placeholder: row.notes_placeholder,
+      priority_default: row.priority_default || "",
+      link_label: row.link_label || "",
+      link_href: row.link_href || "",
       sort_order: row.sort_order,
       is_active: row.is_active,
     });
@@ -108,6 +114,9 @@ function ITAdminPanel() {
           specs: form.specs,
           notes_default: form.notes_default,
           notes_placeholder: form.notes_placeholder,
+          priority_default: form.priority_default,
+          link_label: form.link_label,
+          link_href: form.link_href,
           sort_order: form.sort_order,
           is_active: form.is_active,
         });
@@ -212,11 +221,11 @@ function ITAdminPanel() {
         <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm text-sm text-violet-950">
           <p className="font-semibold">Shared IT / OLO checklist</p>
           <p className="mt-1 text-violet-900/90">
-            Assets here appear on the <strong>IT / OLO</strong> tab for every
-            user. You can set the <strong>name</strong>,{" "}
-            <strong>subtitle</strong>, <strong>description hint</strong>, and{" "}
-            <strong>pre-filled description</strong> used when the asset is added
-            to a brief. Changes apply the next time someone opens the IT tab.
+            Same options as other form catalogs: <strong>name</strong>,{" "}
+            <strong>subtitle</strong>, <strong>priority callout</strong>,{" "}
+            <strong>link label / URL</strong>, <strong>description hint</strong>
+            , and <strong>pre-filled description</strong>. Changes apply the
+            next time someone opens the IT tab.
           </p>
         </section>
 
@@ -302,6 +311,54 @@ function ITAdminPanel() {
                     }
                     className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
                     placeholder="Small line under the name (sizes, format…)"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Priority callout
+                  </label>
+                  <input
+                    value={form.priority_default}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        priority_default: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="Optional highlighted note"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Link label
+                  </label>
+                  <input
+                    value={form.link_label}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        link_label: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="e.g. Spec sheet"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Link URL
+                  </label>
+                  <input
+                    value={form.link_href}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        link_href: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="https://…"
                   />
                 </div>
                 <div>
@@ -439,6 +496,16 @@ function ITAdminPanel() {
                       {row.specs && (
                         <p className="text-xs text-stone-500 mt-0.5">
                           {row.specs}
+                        </p>
+                      )}
+                      {row.priority_default && (
+                        <p className="mt-1 text-[11px] text-amber-800">
+                          Priority: {row.priority_default}
+                        </p>
+                      )}
+                      {(row.link_label || row.link_href) && (
+                        <p className="mt-0.5 text-[11px] text-stone-500 truncate">
+                          Link: {row.link_label || row.link_href}
                         </p>
                       )}
                       {row.notes_placeholder && (

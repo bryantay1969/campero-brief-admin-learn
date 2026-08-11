@@ -81,14 +81,15 @@ where email = 'you@example.com';
 **IT / OLO**
 
 1. Run `supabase/it-asset-catalog.sql`
-2. Admin → **IT / OLO** (or IT tab → Manage IT assets)
+2. Run `supabase/catalog-fields-align.sql` (adds priority + link fields to IT)
+3. Admin → **IT / OLO**
 
 **Digital, Paid Media, In-Store, PR**
 
 1. Run `supabase/form-asset-catalogs.sql`
-2. Admin → **Form catalogs** (or each tab’s **Manage …** link)
+2. Admin → **Form catalogs**
 
-Admins can set name, subtitle, description hint, and pre-filled description for shared checklist items.
+Every catalog shares the same admin fields: name, subtitle, priority callout, link label, link URL, description hint, and pre-filled description.
 
 ## 8. Public preview links (optional but recommended)
 

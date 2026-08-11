@@ -51,6 +51,8 @@ export type ListAssetLike = {
   enabled: boolean;
   notes: string;
   priority?: string;
+  linkLabel?: string;
+  linkHref?: string;
 };
 
 /** Merge catalog into a title/specs/notes list (digital/paid-like). */
@@ -64,6 +66,8 @@ export function mergeListWithCatalog<T extends ListAssetLike>(
     notes: string;
     enabled: boolean;
     priority?: string;
+    linkLabel?: string;
+    linkHref?: string;
   }) => T
 ): T[] {
   const byId = new Map(briefAssets.filter((a) => a?.id).map((a) => [a.id, a]));
@@ -82,6 +86,8 @@ export function mergeListWithCatalog<T extends ListAssetLike>(
           (existing.priority && existing.priority.trim()) ||
           c.priorityDefault ||
           "",
+        linkLabel: c.linkLabel || "",
+        linkHref: c.linkHref || "",
       });
     }
     return factory({
@@ -91,6 +97,8 @@ export function mergeListWithCatalog<T extends ListAssetLike>(
       notes: c.notesDefault,
       enabled: false,
       priority: c.priorityDefault || "",
+      linkLabel: c.linkLabel || "",
+      linkHref: c.linkHref || "",
     });
   });
 
@@ -119,6 +127,9 @@ export function mergePhysicalWithCatalog<
     specs: string;
     notes: string;
     enabled: boolean;
+    priority?: string;
+    linkLabel?: string;
+    linkHref?: string;
   }) => T
 ): T[] {
   const byId = new Map(briefAssets.filter((a) => a?.id).map((a) => [a.id, a]));
@@ -133,6 +144,12 @@ export function mergePhysicalWithCatalog<
         specs: c.specs,
         notes: existing.notes?.trim() ? existing.notes : c.notesDefault,
         enabled: existing.enabled,
+        priority:
+          ((existing as { priority?: string }).priority || "").trim() ||
+          c.priorityDefault ||
+          "",
+        linkLabel: c.linkLabel || "",
+        linkHref: c.linkHref || "",
       });
     }
     return factory({
@@ -141,6 +158,9 @@ export function mergePhysicalWithCatalog<
       specs: c.specs,
       notes: c.notesDefault,
       enabled: false,
+      priority: c.priorityDefault || "",
+      linkLabel: c.linkLabel || "",
+      linkHref: c.linkHref || "",
     });
   });
 

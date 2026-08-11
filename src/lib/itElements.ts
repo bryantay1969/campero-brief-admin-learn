@@ -16,6 +16,9 @@ export function createITAsset(
     specs: partial.specs ?? "",
     enabled: partial.enabled ?? false,
     notes: partial.notes ?? "",
+    priority: partial.priority ?? "",
+    linkLabel: partial.linkLabel ?? "",
+    linkHref: partial.linkHref ?? "",
   };
 }
 
@@ -30,6 +33,9 @@ export type ITCatalogDef = {
   notesDefault: string;
   /** Hint shown when description is empty */
   notesPlaceholder: string;
+  priorityDefault?: string;
+  linkLabel?: string;
+  linkHref?: string;
   dbId?: string;
   sortOrder?: number;
   isActive?: boolean;
@@ -113,6 +119,9 @@ export function createITElementsFromCatalog(
       specs: c.specs,
       notes: c.notesDefault,
       enabled: false,
+      priority: c.priorityDefault || "",
+      linkLabel: c.linkLabel || "",
+      linkHref: c.linkHref || "",
     })
   );
 }
@@ -150,6 +159,10 @@ export function mergeITElementsWithCatalog(
         // Keep brief notes; only fill empty from catalog default
         notes: existing.notes.trim() ? existing.notes : c.notesDefault,
         enabled: existing.enabled,
+        priority:
+          (existing.priority || "").trim() || c.priorityDefault || "",
+        linkLabel: c.linkLabel || "",
+        linkHref: c.linkHref || "",
       });
     }
     return createITAsset({
@@ -158,6 +171,9 @@ export function mergeITElementsWithCatalog(
       specs: c.specs,
       notes: c.notesDefault,
       enabled: false,
+      priority: c.priorityDefault || "",
+      linkLabel: c.linkLabel || "",
+      linkHref: c.linkHref || "",
     });
   });
 
