@@ -6,6 +6,7 @@ import { BrandGuidelinesPanel } from "@/components/BrandGuidelines";
 import { SavedBriefsPanel } from "@/components/SavedBriefsPanel";
 import { AutoSaveEngine } from "@/components/SaveControls";
 import { LeftToolbar } from "@/components/LeftToolbar";
+import { FormNav } from "@/components/FormNav";
 import { PromoOverview } from "@/components/sections/PromoOverview";
 import { MessagingCreative } from "@/components/sections/MessagingCreative";
 import { DigitalAssets } from "@/components/sections/DigitalAssets";
@@ -19,7 +20,15 @@ import type { SectionId } from "@/lib/types";
 import { SECTIONS } from "@/lib/brandGuidelines";
 import { BriefUrlSync } from "@/components/BriefUrlSync";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  PanelLeft,
+  X,
+} from "lucide-react";
+
+const SIDEBAR_KEY = "campero-left-toolbar-open";
 
 function SectionBody({ id }: { id: SectionId }) {
   switch (id) {
@@ -55,7 +64,28 @@ export function AppShell() {
   const library = useBriefStore((s) => s.library);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
   const { isViewer, canEdit } = useAuth();
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SIDEBAR_KEY);
+      if (raw === "0") setSidebarOpen(false);
+      if (raw === "1") setSidebarOpen(true);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const setSidebar = (open: boolean) => {
+    setSidebarOpen(open);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, open ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const markReady = () => {
@@ -90,7 +120,6 @@ export function AppShell() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [isDirty]);
 
-  // Close mobile drawer when section changes
   useEffect(() => {
     setMobileNavOpen(false);
   }, [activeSection]);
@@ -111,14 +140,17 @@ export function AppShell() {
           <BriefUrlSync />
 
           <div className="flex min-h-screen">
-            {/* Desktop left toolbar */}
-            <div className="hidden lg:flex lg:w-64 xl:w-72 shrink-0 sticky top-0 h-screen">
-              <LeftToolbar
-                saveStatus={status}
-                saveError={error}
-                onRetrySave={runSave}
-              />
-            </div>
+            {/* Desktop left toolbar (toggleable) */}
+            {sidebarOpen && (
+              <div className="hidden lg:flex lg:w-64 xl:w-72 shrink-0 sticky top-0 h-screen">
+                <LeftToolbar
+                  saveStatus={status}
+                  saveError={error}
+                  onRetrySave={runSave}
+                  onHide={() => setSidebar(false)}
+                />
+              </div>
+            )}
 
             {/* Mobile drawer */}
             {mobileNavOpen && (
@@ -134,6 +166,7 @@ export function AppShell() {
                     saveStatus={status}
                     saveError={error}
                     onRetrySave={runSave}
+                    onHide={() => setMobileNavOpen(false)}
                   />
                   <button
                     type="button"
@@ -149,9 +182,9 @@ export function AppShell() {
 
             {/* Main column */}
             <div className="flex min-w-0 flex-1 flex-col">
-              {/* Compact top bar (mobile + context) */}
-              <header className="sticky top-0 z-30 border-b border-orange-100 bg-white/95 backdrop-blur-md">
+              <header className="sticky top-0 z-40 border-b border-orange-100 bg-white/95 backdrop-blur-md">
                 <div className="flex items-center gap-3 px-4 sm:px-6 py-3">
+                  {/* Mobile: open drawer */}
                   <button
                     type="button"
                     className="lg:hidden inline-flex items-center justify-center rounded-lg border border-stone-200 bg-white p-2 text-stone-700"
@@ -160,10 +193,33 @@ export function AppShell() {
                   >
                     <Menu className="h-4 w-4" />
                   </button>
+                  {/* Desktop: show toolbar if hidden */}
+                  {!sidebarOpen && (
+                    <button
+                      type="button"
+                      className="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+                      onClick={() => setSidebar(true)}
+                      title="Show left toolbar"
+                    >
+                      <PanelLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Menu</span>
+                    </button>
+                  )}
+                  {/* Desktop: hide when open (also in sidebar) */}
+                  {sidebarOpen && (
+                    <button
+                      type="button"
+                      className="hidden lg:inline-flex items-center justify-center rounded-lg border border-stone-200 bg-white p-2 text-stone-600 hover:bg-stone-50"
+                      onClick={() => setSidebar(false)}
+                      title="Hide left toolbar"
+                      aria-label="Hide left toolbar"
+                    >
+                      <PanelLeft className="h-4 w-4" />
+                    </button>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-campero-orange">
-                      {SECTIONS[idx]?.shortLabel || "Brief"} · Step {idx + 1} of{" "}
-                      {SECTIONS.length}
+                      Campero Promo Brief
                     </p>
                     <p className="text-sm font-semibold text-stone-900 truncate">
                       {activeName}
@@ -171,6 +227,9 @@ export function AppShell() {
                   </div>
                 </div>
               </header>
+
+              {/* Sections restored above the brief */}
+              <FormNav />
 
               {isViewer && (
                 <div className="border-b border-amber-200 bg-amber-50 px-4 sm:px-6 py-2 text-sm text-amber-900">

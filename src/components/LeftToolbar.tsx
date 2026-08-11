@@ -2,78 +2,36 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { SECTIONS } from "@/lib/brandGuidelines";
-import type { SectionId } from "@/lib/types";
 import { useBriefStore } from "@/store/briefStore";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
   BookOpen,
-  Check,
   Eraser,
   FilePlus2,
   FileStack,
   FolderOpen,
   Loader2,
   LogOut,
+  PanelLeftClose,
   Shield,
 } from "lucide-react";
-
-function sectionComplete(
-  id: SectionId,
-  brief: ReturnType<typeof useBriefStore.getState>["brief"]
-): boolean {
-  switch (id) {
-    case "overview":
-      return !!(brief.projectLead && brief.promoName && brief.launchDate);
-    case "messaging":
-      return brief.messagingBullets.some((b) => b.text.trim());
-    case "digital":
-      return (
-        Array.isArray(brief.digitalAssets) &&
-        brief.digitalAssets.some((a) => a.enabled)
-      );
-    case "it":
-      return (
-        Array.isArray(brief.itElements) &&
-        brief.itElements.some((a) => a.enabled)
-      );
-    case "paid":
-      return (
-        Array.isArray(brief.paidMedia) &&
-        brief.paidMedia.some((a) => a.enabled)
-      );
-    case "pr":
-      return brief.pr.blogPost.enabled || brief.pr.pressRelease.enabled;
-    case "physical":
-      return (
-        Array.isArray(brief.physicalAssets) &&
-        brief.physicalAssets.some((a) => a.enabled)
-      );
-    case "legal":
-      return !!brief.legal.legalText.trim();
-    case "review":
-      return false;
-    default:
-      return false;
-  }
-}
 
 type LeftToolbarProps = {
   saveStatus: "idle" | "pending" | "saving" | "saved" | "error";
   saveError: string | null;
   onRetrySave: () => void | Promise<void>;
+  onHide?: () => void;
 };
 
 export function LeftToolbar({
   saveStatus,
   saveError,
   onRetrySave,
+  onHide,
 }: LeftToolbarProps) {
   const router = useRouter();
-  const activeSection = useBriefStore((s) => s.activeSection);
-  const setActiveSection = useBriefStore((s) => s.setActiveSection);
   const brief = useBriefStore((s) => s.brief);
   const library = useBriefStore((s) => s.library);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
@@ -98,8 +56,6 @@ export function LeftToolbar({
   } = useAuth();
 
   const active = library.find((b) => b.id === activeBriefId);
-  const activeIndex = SECTIONS.findIndex((s) => s.id === activeSection);
-  const progress = Math.round(((activeIndex + 1) / SECTIONS.length) * 100);
 
   const handleNewBrief = async () => {
     if (!canEdit) {
@@ -114,7 +70,7 @@ export function LeftToolbar({
       try {
         await onRetrySave();
       } catch {
-        // still allow new brief; user confirmed
+        // still allow new brief
       }
     }
     newBrief();
@@ -157,20 +113,33 @@ export function LeftToolbar({
 
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-orange-100 bg-white">
-      {/* Brand */}
+      {/* Brand + hide */}
       <div className="shrink-0 border-b border-orange-50 px-4 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white font-black text-xs shadow-md shadow-orange-200">
-            PC
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white font-black text-xs shadow-md shadow-orange-200">
+              PC
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold tracking-tight text-stone-900 leading-tight">
+                Promo Brief
+              </p>
+              <p className="text-[10px] text-stone-500 truncate">
+                Campero builder
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold tracking-tight text-stone-900 leading-tight">
-              Promo Brief
-            </p>
-            <p className="text-[10px] text-stone-500 truncate">
-              Campero builder
-            </p>
-          </div>
+          {onHide && (
+            <button
+              type="button"
+              onClick={onHide}
+              className="shrink-0 rounded-lg border border-stone-200 bg-white p-1.5 text-stone-500 hover:bg-stone-50 hover:text-stone-800"
+              title="Hide toolbar"
+              aria-label="Hide left toolbar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -222,7 +191,7 @@ export function LeftToolbar({
           {saveError && (
             <button
               type="button"
-              onClick={onRetrySave}
+              onClick={() => void onRetrySave()}
               className="mt-1 text-[11px] font-semibold text-red-600 underline"
             >
               Retry save
@@ -270,63 +239,8 @@ export function LeftToolbar({
         </button>
       </div>
 
-      {/* Section nav */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        <div className="flex items-center justify-between px-1 mb-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
-            Sections
-          </p>
-          <span className="text-[10px] font-semibold text-stone-400">
-            {progress}%
-          </span>
-        </div>
-        <div className="mb-3 h-1 rounded-full bg-stone-100 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-campero-orange to-campero-yellow transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <nav className="space-y-1">
-          {SECTIONS.map((section, i) => {
-            const isActive = section.id === activeSection;
-            const done = sectionComplete(section.id, brief) && !isActive;
-            return (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => setActiveSection(section.id)}
-                className={cn(
-                  navBtn,
-                  isActive
-                    ? "bg-campero-orange text-white shadow-sm"
-                    : done
-                      ? "bg-emerald-50 text-emerald-900 border border-emerald-100 hover:bg-emerald-100/80"
-                      : "text-stone-600 hover:bg-stone-50"
-                )}
-              >
-                {done ? (
-                  <Check className="h-3.5 w-3.5 shrink-0" />
-                ) : (
-                  <span
-                    className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-stone-100 text-stone-500"
-                    )}
-                  >
-                    {i + 1}
-                  </span>
-                )}
-                <span className="truncate">{section.shortLabel}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Tools + account */}
-      <div className="shrink-0 border-t border-stone-100 px-3 py-3 space-y-1.5">
+      {/* Tools + account (scroll if needed) */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
         <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 px-1 mb-1">
           Tools
         </p>
