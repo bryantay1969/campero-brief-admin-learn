@@ -25,6 +25,7 @@ export function createPaidMediaAsset(
     priority: partial.priority ?? "",
     linkLabel: partial.linkLabel ?? "",
     linkHref: partial.linkHref ?? "",
+    notesPlaceholder: partial.notesPlaceholder ?? "",
   };
 }
 

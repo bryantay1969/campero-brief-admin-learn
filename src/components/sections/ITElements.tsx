@@ -17,9 +17,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import {
   SectionCard,
   FieldLabel,
-  TextInput,
   TextArea,
 } from "@/components/ui/FormControls";
+import { BriefOnlyAssetFields } from "@/components/ui/BriefOnlyAssetFields";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 
@@ -257,72 +257,52 @@ export function ITElements() {
 
               {asset.enabled && (
                 <div className="border-t border-stone-100 px-4 py-4 space-y-3 ml-7">
-                  {custom && canEdit && (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <FieldLabel htmlFor={`it-title-${asset.id}`}>
-                          Name
-                        </FieldLabel>
-                        <TextInput
-                          id={`it-title-${asset.id}`}
-                          value={asset.title}
-                          onChange={(e) =>
-                            updateAsset(asset.id, (a) => ({
-                              ...a,
-                              title: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. Kiosk menu tile"
-                        />
-                      </div>
-                      <div>
-                        <FieldLabel
-                          htmlFor={`it-specs-${asset.id}`}
-                          hint="Small line under the name (sizes, format, etc.)"
-                        >
-                          Subtitle
-                        </FieldLabel>
-                        <TextInput
-                          id={`it-specs-${asset.id}`}
-                          value={asset.specs}
-                          onChange={(e) =>
-                            updateAsset(asset.id, (a) => ({
-                              ...a,
-                              specs: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. 1200×800 PNG"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <FieldLabel
-                      htmlFor={`it-desc-${asset.id}`}
-                      hint={
-                        !custom
-                          ? "Global assets get name/subtitle from the shared catalog"
-                          : undefined
-                      }
-                    >
-                      Description
-                    </FieldLabel>
-                    <TextArea
-                      id={`it-desc-${asset.id}`}
-                      value={asset.notes}
+                  {custom ? (
+                    <BriefOnlyAssetFields
                       disabled={!canEdit}
-                      onChange={(e) =>
+                      value={{
+                        name: asset.title,
+                        specs: asset.specs,
+                        priority: asset.priority || "",
+                        linkLabel: asset.linkLabel || "",
+                        linkHref: asset.linkHref || "",
+                        notesPlaceholder: asset.notesPlaceholder || "",
+                        notes: asset.notes,
+                      }}
+                      onChange={(v) =>
                         updateAsset(asset.id, (a) => ({
                           ...a,
-                          notes: e.target.value,
+                          title: v.name,
+                          specs: v.specs,
+                          priority: v.priority,
+                          linkLabel: v.linkLabel,
+                          linkHref: v.linkHref,
+                          notesPlaceholder: v.notesPlaceholder,
+                          notes: v.notes,
                         }))
                       }
-                      placeholder={placeholder}
-                      className="min-h-[80px]"
-                      rows={3}
                     />
-                  </div>
+                  ) : (
+                    <div>
+                      <FieldLabel htmlFor={`it-desc-${asset.id}`}>
+                        Description
+                      </FieldLabel>
+                      <TextArea
+                        id={`it-desc-${asset.id}`}
+                        value={asset.notes}
+                        disabled={!canEdit}
+                        onChange={(e) =>
+                          updateAsset(asset.id, (a) => ({
+                            ...a,
+                            notes: e.target.value,
+                          }))
+                        }
+                        placeholder={placeholder}
+                        className="min-h-[80px]"
+                        rows={3}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

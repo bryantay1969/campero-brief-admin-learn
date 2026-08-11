@@ -16,9 +16,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import {
   SectionCard,
   FieldLabel,
-  TextInput,
   TextArea,
 } from "@/components/ui/FormControls";
+import { BriefOnlyAssetFields } from "@/components/ui/BriefOnlyAssetFields";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 
@@ -209,52 +209,49 @@ export function PhysicalAssets() {
 
               {asset.enabled && (
                 <div className="border-t border-stone-100 px-4 py-4 space-y-3 ml-7">
-                  {custom && canEdit && (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <FieldLabel>Name</FieldLabel>
-                        <TextInput
-                          value={asset.label}
-                          onChange={(e) =>
-                            updateAsset(asset.id, (a) => ({
-                              ...a,
-                              label: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. Counter tent card"
-                        />
-                      </div>
-                      <div>
-                        <FieldLabel>Subtitle</FieldLabel>
-                        <TextInput
-                          value={asset.specs}
-                          onChange={(e) =>
-                            updateAsset(asset.id, (a) => ({
-                              ...a,
-                              specs: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. 4×6, Full color"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <FieldLabel>Description</FieldLabel>
-                    <TextArea
-                      value={asset.notes}
+                  {custom ? (
+                    <BriefOnlyAssetFields
                       disabled={!canEdit}
-                      onChange={(e) =>
+                      value={{
+                        name: asset.label,
+                        specs: asset.specs,
+                        priority: asset.priority || "",
+                        linkLabel: asset.linkLabel || "",
+                        linkHref: asset.linkHref || "",
+                        notesPlaceholder: asset.notesPlaceholder || "",
+                        notes: asset.notes,
+                      }}
+                      onChange={(v) =>
                         updateAsset(asset.id, (a) => ({
                           ...a,
-                          notes: e.target.value,
+                          label: v.name,
+                          specs: v.specs,
+                          priority: v.priority,
+                          linkLabel: v.linkLabel,
+                          linkHref: v.linkHref,
+                          notesPlaceholder: v.notesPlaceholder,
+                          notes: v.notes,
                         }))
                       }
-                      placeholder={placeholder}
-                      className="min-h-[80px]"
-                      rows={3}
                     />
-                  </div>
+                  ) : (
+                    <div>
+                      <FieldLabel>Description</FieldLabel>
+                      <TextArea
+                        value={asset.notes}
+                        disabled={!canEdit}
+                        onChange={(e) =>
+                          updateAsset(asset.id, (a) => ({
+                            ...a,
+                            notes: e.target.value,
+                          }))
+                        }
+                        placeholder={placeholder}
+                        className="min-h-[80px]"
+                        rows={3}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

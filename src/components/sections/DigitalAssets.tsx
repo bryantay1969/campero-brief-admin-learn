@@ -19,10 +19,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import {
   SectionCard,
   FieldLabel,
-  TextInput,
   TextArea,
   Checkbox,
 } from "@/components/ui/FormControls";
+import { BriefOnlyAssetFields } from "@/components/ui/BriefOnlyAssetFields";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
 
@@ -243,84 +243,73 @@ export function DigitalAssets() {
 
               {asset.enabled && (
                 <div className="border-t border-stone-100 px-4 py-4 space-y-3 ml-7">
-                  {custom && (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <FieldLabel htmlFor={`title-${asset.id}`}>
-                          Name
-                        </FieldLabel>
-                        <TextInput
-                          id={`title-${asset.id}`}
-                          value={asset.title}
-                          onChange={(e) =>
-                            updateAsset(asset.id, (a) => ({
-                              ...a,
-                              title: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. Pinterest Pins"
-                        />
-                      </div>
-                      <div>
-                        <FieldLabel
-                          htmlFor={`specs-${asset.id}`}
-                          hint="Small line under the name (sizes, format, etc.)"
-                        >
-                          Subtitle
-                        </FieldLabel>
-                        <TextInput
-                          id={`specs-${asset.id}`}
-                          value={asset.specs}
-                          onChange={(e) =>
-                            updateAsset(asset.id, (a) => ({
-                              ...a,
-                              specs: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. 1080×1080, Static"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {email && (
-                    <div className="flex flex-wrap gap-4">
-                      {asset.fields
-                        .filter((f) => f.type === "checkbox")
-                        .map((field) => (
-                          <Checkbox
-                            key={field.id}
-                            id={`${asset.id}-${field.id}`}
-                            checked={!!field.checked}
-                            onChange={(v) =>
-                              updateField(asset.id, field.id, {
-                                checked: v,
-                              })
-                            }
-                            label={field.label}
-                          />
-                        ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <FieldLabel htmlFor={`desc-${asset.id}`}>
-                      Description
-                    </FieldLabel>
-                    <TextArea
-                      id={`desc-${asset.id}`}
-                      value={asset.notes}
-                      onChange={(e) =>
+                  {custom ? (
+                    <BriefOnlyAssetFields
+                      disabled={!canEdit}
+                      value={{
+                        name: asset.title,
+                        specs: asset.specs,
+                        priority: asset.priority || "",
+                        linkLabel: asset.linkLabel || "",
+                        linkHref: asset.linkHref || "",
+                        notesPlaceholder: asset.notesPlaceholder || "",
+                        notes: asset.notes,
+                      }}
+                      onChange={(v) =>
                         updateAsset(asset.id, (a) => ({
                           ...a,
-                          notes: e.target.value,
+                          title: v.name,
+                          specs: v.specs,
+                          priority: v.priority,
+                          linkLabel: v.linkLabel,
+                          linkHref: v.linkHref,
+                          notesPlaceholder: v.notesPlaceholder,
+                          notes: v.notes,
                         }))
                       }
-                      placeholder={descPlaceholder}
-                      className="min-h-[80px]"
-                      rows={3}
                     />
-                  </div>
+                  ) : (
+                    <>
+                      {email && (
+                        <div className="flex flex-wrap gap-4">
+                          {asset.fields
+                            .filter((f) => f.type === "checkbox")
+                            .map((field) => (
+                              <Checkbox
+                                key={field.id}
+                                id={`${asset.id}-${field.id}`}
+                                checked={!!field.checked}
+                                onChange={(v) =>
+                                  updateField(asset.id, field.id, {
+                                    checked: v,
+                                  })
+                                }
+                                label={field.label}
+                              />
+                            ))}
+                        </div>
+                      )}
+                      <div>
+                        <FieldLabel htmlFor={`desc-${asset.id}`}>
+                          Description
+                        </FieldLabel>
+                        <TextArea
+                          id={`desc-${asset.id}`}
+                          value={asset.notes}
+                          disabled={!canEdit}
+                          onChange={(e) =>
+                            updateAsset(asset.id, (a) => ({
+                              ...a,
+                              notes: e.target.value,
+                            }))
+                          }
+                          placeholder={descPlaceholder}
+                          className="min-h-[80px]"
+                          rows={3}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

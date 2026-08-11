@@ -8,8 +8,8 @@ import {
   SectionCard,
   FieldLabel,
   TextArea,
-  TextInput,
 } from "@/components/ui/FormControls";
+import { BriefOnlyAssetFields } from "@/components/ui/BriefOnlyAssetFields";
 import type { FormAssetCatalogDef } from "@/lib/formAssetCatalog";
 import { BUILTIN_CATALOGS } from "@/lib/formAssetCatalogBuiltins";
 import { fetchCatalogForForm } from "@/lib/supabase/formAssetCatalogApi";
@@ -391,51 +391,32 @@ export function PRSection() {
                 </button>
               )}
             </div>
-            {asset.enabled && canEdit && (
+            {asset.enabled && (
               <div className="border-t border-stone-100 px-4 py-4 space-y-3 ml-7">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <FieldLabel>Name</FieldLabel>
-                    <TextInput
-                      value={asset.title}
-                      onChange={(e) =>
-                        updateCustom(asset.id, (a) => ({
-                          ...a,
-                          title: e.target.value,
-                        }))
-                      }
-                      placeholder="e.g. Influencer kit"
-                    />
-                  </div>
-                  <div>
-                    <FieldLabel>Subtitle</FieldLabel>
-                    <TextInput
-                      value={asset.specs}
-                      onChange={(e) =>
-                        updateCustom(asset.id, (a) => ({
-                          ...a,
-                          specs: e.target.value,
-                        }))
-                      }
-                      placeholder="Optional line under the name"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <FieldLabel>Description</FieldLabel>
-                  <TextArea
-                    value={asset.notes}
-                    onChange={(e) =>
-                      updateCustom(asset.id, (a) => ({
-                        ...a,
-                        notes: e.target.value,
-                      }))
-                    }
-                    placeholder="Details for this brief only…"
-                    className="min-h-[72px]"
-                    rows={2}
-                  />
-                </div>
+                <BriefOnlyAssetFields
+                  disabled={!canEdit}
+                  value={{
+                    name: asset.title,
+                    specs: asset.specs,
+                    priority: asset.priority || "",
+                    linkLabel: asset.linkLabel || "",
+                    linkHref: asset.linkHref || "",
+                    notesPlaceholder: asset.notesPlaceholder || "",
+                    notes: asset.notes,
+                  }}
+                  onChange={(v) =>
+                    updateCustom(asset.id, (a) => ({
+                      ...a,
+                      title: v.name,
+                      specs: v.specs,
+                      priority: v.priority,
+                      linkLabel: v.linkLabel,
+                      linkHref: v.linkHref,
+                      notesPlaceholder: v.notesPlaceholder,
+                      notes: v.notes,
+                    }))
+                  }
+                />
               </div>
             )}
           </div>

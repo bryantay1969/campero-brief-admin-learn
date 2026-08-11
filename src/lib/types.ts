@@ -43,6 +43,8 @@ export interface DigitalAssetItem {
   /** Optional link under the title (from shared catalog) */
   linkLabel?: string;
   linkHref?: string;
+  /** Placeholder hint for description (brief-only / catalog) */
+  notesPlaceholder?: string;
   fields: DigitalAssetField[];
 }
 
@@ -89,6 +91,8 @@ export interface ITAssetItem {
   /** Optional link under the title (from shared catalog) */
   linkLabel?: string;
   linkHref?: string;
+  /** Placeholder hint for description */
+  notesPlaceholder?: string;
 }
 
 export type ITElements = ITAssetItem[];
@@ -124,6 +128,8 @@ export interface PaidMediaAssetItem {
   /** Optional link under the title (from shared catalog) */
   linkLabel?: string;
   linkHref?: string;
+  /** Placeholder hint for description */
+  notesPlaceholder?: string;
 }
 
 export type PaidMedia = PaidMediaAssetItem[];
@@ -161,6 +167,7 @@ export interface PRCustomAsset {
   priority?: string;
   linkLabel?: string;
   linkHref?: string;
+  notesPlaceholder?: string;
 }
 
 export interface PRAssets {
@@ -189,6 +196,8 @@ export interface PhysicalAsset {
   /** Optional link under the title (from shared catalog) */
   linkLabel?: string;
   linkHref?: string;
+  /** Placeholder hint for description */
+  notesPlaceholder?: string;
 }
 
 /** Slug of a legal template, or "custom" when free-edited. */
