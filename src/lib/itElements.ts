@@ -19,24 +19,20 @@ export function createITAsset(
   };
 }
 
-export const BUILT_IN_IT_ASSET_IDS = new Set([
-  "oloKoalaImage",
-  "oloDescription",
-  "ezCaterImage",
-]);
-
-export function isCustomITAsset(asset: ITAssetItem): boolean {
-  return !BUILT_IN_IT_ASSET_IDS.has(asset.id);
-}
-
-/** Fixed note shown below the IT asset list (not a checklist item). */
-export const IT_PROJECT_OWNER_NOTE =
-  "Note for project owner: If this is not food item (st. Jude cup) need to alert IT to add item to be sold on in-store kiosk.";
-
-const DEFAULT_SPECS: Record<string, string> = {
-  oloKoalaImage: "Static Product Images",
-  oloDescription: "Category, Title, and Description for online ordering",
-  ezCaterImage: "Static Product Image - 1200 x 800px PNG image(s)",
+/** Global IT catalog definition (shared for all briefs). */
+export type ITCatalogDef = {
+  id: string;
+  slug: string;
+  title: string;
+  /** Subtitle under the name */
+  specs: string;
+  /** Pre-filled description on new / reset assets */
+  notesDefault: string;
+  /** Hint shown when description is empty */
+  notesPlaceholder: string;
+  dbId?: string;
+  sortOrder?: number;
+  isActive?: boolean;
 };
 
 const OLO_KOALA_DESCRIPTION = `Static Product Image
@@ -47,26 +43,129 @@ const OLO_DESCRIPTION_TEMPLATE = `• Category: Under XXX
 • Title:
 • Description:`;
 
+/** Offline / seed catalog matching historical built-ins. */
+export const BUILTIN_IT_CATALOG: ITCatalogDef[] = [
+  {
+    id: "oloKoalaImage",
+    slug: "oloKoalaImage",
+    title: "OLO / Koala Image",
+    specs: "Static Product Images",
+    notesDefault: OLO_KOALA_DESCRIPTION,
+    notesPlaceholder: "Specs, sizes, or other image details…",
+    sortOrder: 10,
+    isActive: true,
+  },
+  {
+    id: "oloDescription",
+    slug: "oloDescription",
+    title: "OLO Description",
+    specs: "Category, Title, and Description for online ordering",
+    notesDefault: OLO_DESCRIPTION_TEMPLATE,
+    notesPlaceholder: "Category, title, description for OLO…",
+    sortOrder: 20,
+    isActive: true,
+  },
+  {
+    id: "ezCaterImage",
+    slug: "ezCaterImage",
+    title: "EZ Cater Image",
+    specs: "Static Product Image - 1200 x 800px PNG image(s)",
+    notesDefault: "",
+    notesPlaceholder: "Specs, copy, timing, or other details…",
+    sortOrder: 30,
+    isActive: true,
+  },
+];
+
+export const BUILT_IN_IT_ASSET_IDS = new Set(
+  BUILTIN_IT_CATALOG.map((c) => c.slug)
+);
+
+/** Built-in or catalog-managed assets use global title/subtitle from catalog. */
+export function isCatalogITAsset(
+  asset: ITAssetItem,
+  catalog: ITCatalogDef[]
+): boolean {
+  return catalog.some((c) => c.slug === asset.id || c.id === asset.id);
+}
+
+export function isCustomITAsset(
+  asset: ITAssetItem,
+  catalog?: ITCatalogDef[]
+): boolean {
+  if (catalog && catalog.length > 0) {
+    return !isCatalogITAsset(asset, catalog);
+  }
+  return !BUILT_IN_IT_ASSET_IDS.has(asset.id);
+}
+
+/** Fixed note shown below the IT asset list (not a checklist item). */
+export const IT_PROJECT_OWNER_NOTE =
+  "Note for project owner: If this is not food item (st. Jude cup) need to alert IT to add item to be sold on in-store kiosk.";
+
+export function createITElementsFromCatalog(
+  catalog: ITCatalogDef[]
+): ITElements {
+  return catalog.map((c) =>
+    createITAsset({
+      id: c.slug,
+      title: c.title,
+      specs: c.specs,
+      notes: c.notesDefault,
+      enabled: false,
+    })
+  );
+}
+
 export function createDefaultITElements(): ITElements {
-  return [
-    createITAsset({
-      id: "oloKoalaImage",
-      title: "OLO / Koala Image",
-      specs: DEFAULT_SPECS.oloKoalaImage,
-      notes: OLO_KOALA_DESCRIPTION,
-    }),
-    createITAsset({
-      id: "oloDescription",
-      title: "OLO Description",
-      specs: DEFAULT_SPECS.oloDescription,
-      notes: OLO_DESCRIPTION_TEMPLATE,
-    }),
-    createITAsset({
-      id: "ezCaterImage",
-      title: "EZ Cater Image",
-      specs: DEFAULT_SPECS.ezCaterImage,
-    }),
-  ];
+  return createITElementsFromCatalog(BUILTIN_IT_CATALOG);
+}
+
+/**
+ * Merge global catalog into a brief’s IT list.
+ * - Catalog items appear in catalog order (title/subtitle from catalog).
+ * - Brief keeps enabled + notes for known slugs.
+ * - New catalog items are added with pre-filled notes.
+ * - Brief-only custom rows stay after catalog items.
+ */
+export function mergeITElementsWithCatalog(
+  briefAssets: ITElements,
+  catalog: ITCatalogDef[]
+): ITElements {
+  const byId = new Map(
+    briefAssets
+      .filter((a) => a && a.id)
+      .map((a) => [a.id, createITAsset({ ...a, title: a.title || "" })])
+  );
+
+  const catalogSlugs = new Set(catalog.map((c) => c.slug));
+  const merged: ITElements = catalog.map((c) => {
+    const existing = byId.get(c.slug);
+    if (existing) {
+      return createITAsset({
+        ...existing,
+        id: c.slug,
+        title: c.title,
+        specs: c.specs,
+        // Keep brief notes; only fill empty from catalog default
+        notes: existing.notes.trim() ? existing.notes : c.notesDefault,
+        enabled: existing.enabled,
+      });
+    }
+    return createITAsset({
+      id: c.slug,
+      title: c.title,
+      specs: c.specs,
+      notes: c.notesDefault,
+      enabled: false,
+    });
+  });
+
+  const custom = briefAssets.filter(
+    (a) => a && a.id && a.id !== "nonFoodItAlert" && !catalogSlugs.has(a.id)
+  );
+
+  return [...merged, ...custom.map((a) => createITAsset({ ...a, title: a.title || "" }))];
 }
 
 export function formatITAssetDetail(asset: ITAssetItem): string {
@@ -99,7 +198,6 @@ export function migrateLegacyITElements(legacy: LegacyITElements): ITElements {
         ...byId.oloKoalaImage,
         enabled: !!legacy.oloKoalaImage.enabled,
         notes: legacy.oloKoalaImage.notes?.trim() || OLO_KOALA_DESCRIPTION,
-        specs: DEFAULT_SPECS.oloKoalaImage,
       };
     }
 
@@ -116,7 +214,6 @@ export function migrateLegacyITElements(legacy: LegacyITElements): ITElements {
         ...byId.oloDescription,
         enabled: !!legacy.oloDescription.enabled,
         notes: combined || OLO_DESCRIPTION_TEMPLATE,
-        specs: DEFAULT_SPECS.oloDescription,
       };
     }
 
@@ -125,11 +222,9 @@ export function migrateLegacyITElements(legacy: LegacyITElements): ITElements {
         ...byId.ezCaterImage,
         enabled: !!legacy.ezCaterImage.enabled,
         notes: legacy.ezCaterImage.notes || "",
-        specs: DEFAULT_SPECS.ezCaterImage,
       };
     }
 
-    // nonFoodItAlert removed from list — project owner note is UI-only
     return Object.values(byId);
   } catch {
     return createDefaultITElements();
@@ -141,13 +236,11 @@ export function normalizeITElements(value: unknown): ITElements {
     if (isNewShape(value)) {
       return value
         .filter((item) => item && typeof item === "object")
-        // Drop removed built-in non-food kiosk row
         .filter((item) => item.id !== "nonFoodItAlert")
         .map((item) => {
-          const defaultSpecs = item.id ? DEFAULT_SPECS[item.id] : undefined;
           const existingNotes = (item.notes || "").trim();
-
           let notes = item.notes || "";
+          // One-time legacy note upgrades for old briefs
           if (item.id === "oloKoalaImage") {
             const isLegacyOloNote =
               !existingNotes ||
@@ -156,17 +249,15 @@ export function normalizeITElements(value: unknown): ITElements {
               existingNotes === "900×600 PNG / 2000×2000 PNG";
             if (isLegacyOloNote) notes = OLO_KOALA_DESCRIPTION;
           }
-          if (item.id === "oloDescription") {
-            if (!existingNotes) notes = OLO_DESCRIPTION_TEMPLATE;
+          if (item.id === "oloDescription" && !existingNotes) {
+            notes = OLO_DESCRIPTION_TEMPLATE;
           }
 
           return createITAsset({
             ...item,
             title: item.title || "Untitled asset",
-            specs:
-              item.id && DEFAULT_SPECS[item.id]
-                ? DEFAULT_SPECS[item.id]
-                : (item.specs && item.specs.trim()) || defaultSpecs || "",
+            // Prefer stored subtitle (allows global/admin edits to persist on brief)
+            specs: (item.specs && item.specs.trim()) || "",
             notes,
           });
         });

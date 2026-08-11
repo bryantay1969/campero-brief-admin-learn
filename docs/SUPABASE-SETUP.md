@@ -76,7 +76,16 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-## 7. Public preview links (optional but recommended)
+## 7. IT / OLO global assets (optional but recommended)
+
+For admin-managed IT checklist assets:
+
+1. **SQL Editor** → open `supabase/it-asset-catalog.sql`
+2. Copy all → **Run**
+
+Then open the app as admin → **Admin → IT / OLO assets** (or IT tab → Manage IT assets).
+
+## 8. Public preview links (optional but recommended)
 
 For **Copy preview link** (anyone with the link can view a read-only brief):
 

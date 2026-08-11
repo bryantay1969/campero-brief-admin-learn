@@ -4,36 +4,36 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminGate } from "@/components/auth/AdminGate";
 import {
-  createLegalTemplate,
-  deleteLegalTemplate,
-  fetchAllLegalTemplates,
-  updateLegalTemplate,
-  type LegalTemplateRow,
-} from "@/lib/supabase/legalTemplatesApi";
-import { FileText, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
+  createITCatalogItem,
+  deleteITCatalogItem,
+  fetchAllITCatalog,
+  updateITCatalogItem,
+  type ITCatalogRow,
+} from "@/lib/supabase/itAssetCatalogApi";
+import { FileStack, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
 
 function emptyForm() {
   return {
     slug: "",
-    label: "",
-    description: "",
-    body: "",
+    title: "",
+    specs: "",
+    notes_default: "",
+    notes_placeholder: "Specs, copy, timing, or other details…",
     sort_order: 100,
     is_active: true,
   };
 }
 
-/** Internal id for briefs/DB — not shown in the UI. */
-function slugFromLabel(label: string): string {
-  const base = label
+function slugFromTitle(title: string): string {
+  const base = title
     .trim()
     .replace(/\s+/g, "")
     .replace(/[^a-zA-Z0-9_-]/g, "");
-  return base || `template${Date.now()}`;
+  return base || `itAsset${Date.now()}`;
 }
 
-function LegalAdminPanel() {
-  const [rows, setRows] = useState<LegalTemplateRow[]>([]);
+function ITAdminPanel() {
+  const [rows, setRows] = useState<ITCatalogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -47,13 +47,13 @@ function LegalAdminPanel() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAllLegalTemplates();
+      const data = await fetchAllITCatalog();
       setRows(data);
     } catch (e) {
       setError(
         e instanceof Error
           ? e.message
-          : "Could not load templates. Did you run legal-templates.sql?"
+          : "Could not load IT catalog. Did you run it-asset-catalog.sql?"
       );
     } finally {
       setLoading(false);
@@ -76,13 +76,14 @@ function LegalAdminPanel() {
     setError(null);
   };
 
-  const openEdit = (row: LegalTemplateRow) => {
+  const openEdit = (row: ITCatalogRow) => {
     setEditingId(row.id);
     setForm({
       slug: row.slug,
-      label: row.label,
-      description: row.description,
-      body: row.body,
+      title: row.title,
+      specs: row.specs,
+      notes_default: row.notes_default,
+      notes_placeholder: row.notes_placeholder,
       sort_order: row.sort_order,
       is_active: row.is_active,
     });
@@ -102,20 +103,21 @@ function LegalAdminPanel() {
     setError(null);
     try {
       if (editingId) {
-        await updateLegalTemplate(editingId, {
-          label: form.label,
-          description: form.description,
-          body: form.body,
+        await updateITCatalogItem(editingId, {
+          title: form.title,
+          specs: form.specs,
+          notes_default: form.notes_default,
+          notes_placeholder: form.notes_placeholder,
           sort_order: form.sort_order,
           is_active: form.is_active,
         });
-        flash(`Saved “${form.label}” for everyone`);
+        flash(`Saved “${form.title}” for everyone`);
       } else {
-        await createLegalTemplate({
+        await createITCatalogItem({
           ...form,
-          slug: slugFromLabel(form.label),
+          slug: form.slug.trim() || slugFromTitle(form.title),
         });
-        flash(`Created “${form.label}” for everyone`);
+        flash(`Created “${form.title}” for everyone`);
       }
       closeForm();
       await load();
@@ -126,24 +128,22 @@ function LegalAdminPanel() {
     }
   };
 
-  const onDelete = async (row: LegalTemplateRow) => {
+  const onDelete = async (row: ITCatalogRow) => {
     const ok = window.confirm(
       [
-        `Delete template “${row.label}” for EVERYONE?`,
+        `Delete IT asset “${row.title}” for EVERYONE?`,
         "",
-        "This removes the chip from the Legal tab for all users.",
-        "It cannot be undone from this screen.",
-        "",
-        "Briefs that already saved this text keep their own copy. New briefs will no longer see this template.",
+        "This removes it from the global IT / OLO checklist for all users.",
+        "Briefs that already include this asset keep their own copy until edited.",
       ].join("\n")
     );
     if (!ok) return;
     setBusy(true);
     setError(null);
     try {
-      await deleteLegalTemplate(row.id);
+      await deleteITCatalogItem(row.id);
       if (editingId === row.id) closeForm();
-      flash(`Deleted “${row.label}” for everyone`);
+      flash(`Deleted “${row.title}” for everyone`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -158,14 +158,14 @@ function LegalAdminPanel() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white">
-              <FileText className="h-5 w-5" />
+              <FileStack className="h-5 w-5" />
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight">
-                Manage all templates
+                IT / OLO assets
               </h1>
               <p className="text-xs text-stone-500">
-                Shared legal library · Legal tab chips for every user
+                Global catalog · drives the IT tab checklist for everyone
               </p>
             </div>
           </div>
@@ -184,13 +184,13 @@ function LegalAdminPanel() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add template for everyone
+              Add asset for everyone
             </button>
             <Link
-              href="/admin/it/"
+              href="/admin/legal/"
               className="inline-flex items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
             >
-              IT / OLO
+              Legal
             </Link>
             <Link
               href="/admin/"
@@ -210,13 +210,13 @@ function LegalAdminPanel() {
 
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
         <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm text-sm text-violet-950">
-          <p className="font-semibold">Shared library for everyone</p>
+          <p className="font-semibold">Shared IT / OLO checklist</p>
           <p className="mt-1 text-violet-900/90">
-            <strong>Add template for everyone</strong> creates a new Legal chip
-            for all users. Open a template and use{" "}
-            <strong>Save for everyone</strong> to update the shared library. To
-            change legal text on a single promo only, use{" "}
-            <strong>Edit for this brief only</strong> on the Legal tab.
+            Assets here appear on the <strong>IT / OLO</strong> tab for every
+            user. You can set the <strong>name</strong>,{" "}
+            <strong>subtitle</strong>, <strong>description hint</strong>, and{" "}
+            <strong>pre-filled description</strong> used when the asset is added
+            to a brief. Changes apply the next time someone opens the IT tab.
           </p>
         </section>
 
@@ -231,7 +231,7 @@ function LegalAdminPanel() {
             {(error.includes("relation") ||
               error.includes("does not exist")) && (
               <span className="block mt-2 text-xs">
-                Run <code>supabase/legal-templates.sql</code> in the Supabase
+                Run <code>supabase/it-asset-catalog.sql</code> in the Supabase
                 SQL Editor first.
               </span>
             )}
@@ -255,18 +255,16 @@ function LegalAdminPanel() {
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-campero-orange">
                       {editingId
-                        ? "Edit shared template"
-                        : "Add template for everyone"}
+                        ? "Edit global IT asset"
+                        : "Add asset for everyone"}
                     </p>
                     <h3 className="text-base font-bold text-stone-900 mt-0.5">
                       {editingId
-                        ? form.label || "Untitled template"
-                        : "New template"}
+                        ? form.title || "Untitled asset"
+                        : "New IT asset"}
                     </h3>
                     <p className="text-xs text-stone-500 mt-1">
-                      {editingId
-                        ? "Save for everyone updates the shared library for all users and new briefs."
-                        : "Creates a new shared chip on the Legal tab for all users."}
+                      Updates the shared checklist for all users and new briefs.
                     </p>
                   </div>
                   <button
@@ -281,44 +279,70 @@ function LegalAdminPanel() {
               <div className="p-6 space-y-4 overflow-y-auto flex-1">
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
-                    Label
+                    Name (title)
                   </label>
                   <input
                     required
-                    value={form.label}
+                    value={form.title}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, label: e.target.value }))
+                      setForm((f) => ({ ...f, title: e.target.value }))
                     }
                     className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                    placeholder="e.g. Standard"
+                    placeholder="e.g. OLO / Koala Image"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
-                    Short description
+                    Subtitle
                   </label>
                   <input
-                    value={form.description}
+                    value={form.specs}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, description: e.target.value }))
+                      setForm((f) => ({ ...f, specs: e.target.value }))
                     }
                     className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-                    placeholder="Shown under the chip label"
+                    placeholder="Small line under the name (sizes, format…)"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-stone-600">
-                    Legal text
+                    Description hint
+                  </label>
+                  <input
+                    value={form.notes_placeholder}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        notes_placeholder: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                    placeholder="Shown as empty-field hint on the form"
+                  />
+                  <p className="mt-1 text-[11px] text-stone-400">
+                    Placeholder text when the description box is empty.
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-stone-600">
+                    Pre-filled description
                   </label>
                   <textarea
-                    required
-                    value={form.body}
+                    value={form.notes_default}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, body: e.target.value }))
+                      setForm((f) => ({
+                        ...f,
+                        notes_default: e.target.value,
+                      }))
                     }
-                    rows={8}
+                    rows={6}
                     className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-serif leading-relaxed"
+                    placeholder="Default text when this asset is added to a brief"
                   />
+                  <p className="mt-1 text-[11px] text-stone-400">
+                    Used on new briefs and when the asset is first added.
+                    Existing briefs keep their own description until edited.
+                  </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
@@ -359,12 +383,11 @@ function LegalAdminPanel() {
                   disabled={busy}
                   className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
                 >
-                  <Save className="h-4 w-4" />
                   {busy
                     ? "Saving…"
                     : editingId
                       ? "Save for everyone"
-                      : "Add template for everyone"}
+                      : "Add asset for everyone"}
                 </button>
                 <button
                   type="button"
@@ -380,22 +403,22 @@ function LegalAdminPanel() {
 
         <section className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
           <div className="border-b border-stone-100 px-5 py-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold">Templates ({rows.length})</h2>
+            <h2 className="text-sm font-bold">Assets ({rows.length})</h2>
             <button
               type="button"
               onClick={openCreate}
               className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[11px] font-bold text-violet-900 hover:bg-violet-100"
             >
               <Plus className="h-3 w-3" />
-              Add template for everyone
+              Add asset for everyone
             </button>
           </div>
           {loading ? (
             <p className="p-8 text-center text-sm text-stone-400">Loading…</p>
           ) : rows.length === 0 ? (
             <p className="p-8 text-center text-sm text-stone-400">
-              No rows yet. Run <code>legal-templates.sql</code> or click{" "}
-              <strong>Add template for everyone</strong>.
+              No rows yet. Run <code>it-asset-catalog.sql</code> or click Add
+              asset.
             </p>
           ) : (
             <ul className="divide-y divide-stone-100">
@@ -405,7 +428,7 @@ function LegalAdminPanel() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold text-stone-900">
-                          {row.label}
+                          {row.title}
                         </span>
                         {!row.is_active && (
                           <span className="text-[10px] font-bold uppercase text-stone-400">
@@ -413,14 +436,21 @@ function LegalAdminPanel() {
                           </span>
                         )}
                       </div>
-                      {row.description && (
+                      {row.specs && (
                         <p className="text-xs text-stone-500 mt-0.5">
-                          {row.description}
+                          {row.specs}
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-stone-600 line-clamp-2 font-serif">
-                        {row.body}
-                      </p>
+                      {row.notes_placeholder && (
+                        <p className="mt-1 text-[11px] text-stone-400">
+                          Hint: {row.notes_placeholder}
+                        </p>
+                      )}
+                      {row.notes_default && (
+                        <p className="mt-2 text-xs text-stone-600 line-clamp-2 font-serif whitespace-pre-wrap">
+                          {row.notes_default}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-1.5 shrink-0">
                       <button
@@ -452,10 +482,10 @@ function LegalAdminPanel() {
   );
 }
 
-export default function AdminLegalPage() {
+export default function AdminITPage() {
   return (
     <AdminGate>
-      <LegalAdminPanel />
+      <ITAdminPanel />
     </AdminGate>
   );
 }
