@@ -293,8 +293,8 @@ export function SavedBriefsPanel() {
                 Currently editing
               </p>
               <p className="text-sm font-bold text-stone-900 truncate">
-                {activeRecord?.name ||
-                  brief.promoName ||
+                {brief.promoName.trim() ||
+                  activeRecord?.name ||
                   "Untitled draft"}
                 {isDirty && (
                   <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
