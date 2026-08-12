@@ -1,9 +1,5 @@
 import type { PhysicalAsset, PromoBrief } from "./types";
 import {
-  BUILTIN_LEGAL_TEMPLATES,
-  findTemplateText,
-} from "./legalTemplates";
-import {
   createDefaultDigitalAssets,
   createDigitalAsset,
   createField,
@@ -203,109 +199,453 @@ export function createEmptyBrief(): PromoBrief {
   };
 }
 
-/** National Fried Chicken Day – July 6 example (fully filled sample). */
+/** National Fried Chicken Day sample — from client export (2026-08-12T17:14:11.064Z). */
 export function createSampleBrief(): PromoBrief {
   const empty = createEmptyBrief();
   return {
     ...empty,
-    projectLead: "Alex Rivera",
+    projectLead: "Allie Abilez",
     promoName: "National Fried Chicken Day",
-    launchDate: "2025-07-06",
-    endDate: "2025-07-06",
+    launchDate: "2026-07-06",
+    endDate: "2026-07-06",
     oneDayOnly: true,
-    quickNote: "",
+    quickNote: "We can drop this offer into loyalty accounts in the Rewards section",
     loyaltyOnly: "yes",
     promoCodeNeeded: "no",
     locations: "National",
     dropOfferIntoLoyalty: true,
-    dropOfferNote:
-      "Drop BOGO (or featured fried chicken offer) into eligible Rewards accounts in the Rewards section ahead of launch.",
+    dropOfferNote: "Drop BOGO (or featured fried chicken offer) into eligible Rewards accounts in the Rewards section ahead of launch.",
 
-    messagingBullets:
-      "Celebrate National Fried Chicken Day with Pollo Campero\nLoyalty members: exclusive offer waiting in Rewards\nCrispy, golden fried chicken — available for one day only\nOpen the app or sign in at www.campero.com to redeem",
-    creativeNotes:
-      "Hero: golden fried chicken pieces, appetizing close-up with warm lighting. Emphasize crunch and Campero seasoning. Keep plates clean — no unauthorized sides. Lifestyle optional: family sharing at table. Tone: celebratory, warm, limited-time urgency without feeling spammy.",
+    messagingBullets: "$5 off\n- For National Fried chicken day\n- $15 Minimum purchase\n- 7/6\n- Loyalty members only (badge)",
+    creativeNotes: "No campero logo since this is owned channels",
     foodPhotoReferences: [
       {
         id: uid(),
-        name: "POC_NFCD_Hero_FriedChicken_01.jpg",
-        link: "",
+        name: "COB Hero image",
+        link: "https://oneomnicom.sharepoint.com/:i:/r/sites/POLLOCAMPERO-FORCLIENTS/Shared%20Documents/GENERAL/IMAGERY/2025%20Library%202-0__Stills/POC_116355_PHOTO_HERO_FOOD_2025-06-04_JPGs/POC_116355_PHOTO_HERO_FOOD_2025-06-04_COB-FR_20PC-MIXED-NOHANDS_STR-ON_FINAL.jpg?csf=1&web=1&e=Op6fxM",
       },
       {
         id: uid(),
-        name: "POC_NFCD_Detail_Crunch_02.jpg",
-        link: "",
-      },
-      {
-        id: uid(),
-        name: "POC_Loyalty_Badge_Only_v3.png",
-        link: "",
+        name: "20 PC Dark White",
+        link: "https://oneomnicom.sharepoint.com/:i:/r/sites/POLLOCAMPERO-FORCLIENTS/Shared%20Documents/GENERAL/IMAGERY/2025%20Library%202-0__Stills/POC_116355_PHOTO_HERO_FOOD_2025-06-04_JPGs/POC_116355_PHOTO_HERO_FOOD_2025-06-04_COB-FR_20PC-DARK-WHITE_SWEEP_STR-ON_FINAL.jpg?csf=1&web=1&e=B00TsO",
       },
     ],
     noCamperoLogo: true,
     loyaltyMembersOnlyBadge: true,
 
-    digitalAssets: createDefaultDigitalAssets().map((asset) => {
-      if (asset.id === "organicPosts") {
-        return createDigitalAsset({
-          ...asset,
-          enabled: true,
-          notes:
-            "Feed + story crops. Animated preferred. Include still thumbnail for platforms that require it.",
-        });
-      }
-      if (asset.id === "email") {
-        return createDigitalAsset({
-          ...asset,
-          enabled: true,
-          notes:
-            "PRIORITY: Submit to Punchh on schedule. Main module + rich image. Secondary module optional if space.",
-          fields: asset.fields.map((f) =>
-            f.id === "email-main" || f.id === "email-rich"
-              ? createField({ ...f, checked: true })
-              : f
-          ),
-        });
-      }
-      if (asset.id === "websiteCarousel") {
-        return createDigitalAsset({
-          ...asset,
-          enabled: false,
-          notes: "Not in scope for this one-day email/social push.",
-        });
-      }
-      return asset;
-    }),
+    digitalAssets: [
+      createDigitalAsset({
+        id: "organicPosts",
+        title: "Organic Post(s)",
+        specs: "1080×1080, 1080×1350, Static (unless noted otherwise), Include same size thumbnail Image for each asset",
+        enabled: true,
+        notes: "Also include Thumbnail Image for each asset\n• [Note: same dimensions as requested asset: 1080x1350 post requires a 1080x1350 thumbnail\n1080x1080 requires a 1080x1080 thumbnail]\nStatic (unless noted otherwise)",
+        priority: "",
+        linkLabel: "",
+        linkHref: "",
+        notesPlaceholder: "",
+        fields: [
 
-    itElements: createDefaultITElements(),
+        ],
+      }),
+      createDigitalAsset({
+        id: "email",
+        title: "Email",
+        specs: "Static (unless noted otherwise)",
+        enabled: true,
+        notes: "",
+        priority: "Priority asset as we need to submit to Punchh 4 business days in advance",
+        linkLabel: "Layered Photoshop Specs",
+        linkHref: "https://www.dropbox.com/scl/fo/fkc1yxaywf20md6c9uaav/AFJUPGCH1u9-bhIGRW0vjxg?rlkey=gvlc3ojb5nuli8ibzddfcjblu&st=cnyiifzq&e=1&dl=0",
+        notesPlaceholder: "",
+        fields: [
+          createField({
+            id: "email-main",
+            label: "Main Module",
+            value: "",
+            type: "checkbox",
+            checked: true,
+          }),
+          createField({
+            id: "email-rich",
+            label: "Rich Image",
+            value: "",
+            type: "checkbox",
+            checked: true,
+          }),
+          createField({
+            id: "email-secondary",
+            label: "Secondary Module",
+            value: "",
+            type: "checkbox",
+            checked: true,
+          }),
+        ],
+      }),
+      createDigitalAsset({
+        id: "websiteCarousel",
+        title: "Website Carousel",
+        specs: "Static (unless noted otherwise), Save files as WebP Lossy 75 high",
+        enabled: true,
+        notes: "Not in scope for this one-day email/social push.",
+        priority: "",
+        linkLabel: "",
+        linkHref: "",
+        notesPlaceholder: "",
+        fields: [
 
-    paidMedia: createDefaultPaidMedia().map((asset) =>
-      asset.id === "metaPaidSocial"
-        ? { ...asset, notes: "No paid media for this promo." }
-        : asset
-    ),
-
-    pr: {
-      blogPost: {
-        enabled: false,
-        notes: "Not planned for NFCD this year.",
-        imageSpecs: "Link to specs example files",
-      },
-      pressRelease: {
+        ],
+      }),
+      createDigitalAsset({
+        id: "In-AppCarousel",
+        title: "In-App Carousel",
+        specs: "1024x500, Static Jpeg files",
         enabled: false,
         notes: "",
-        bySpm: false,
-      },
+        priority: "",
+        linkLabel: "",
+        linkHref: "",
+        notesPlaceholder: "",
+        fields: [
+
+        ],
+      }),
+      createDigitalAsset({
+        id: "smsCopy",
+        title: "SMS Copy",
+        specs: "160 character limit",
+        enabled: false,
+        notes: "Example: \nOrder Pollo Campero from the convenience of your home. \nEnjoy $5 off $20 code CAMPERO5. \nParticipating locations only. Expires 2/3/25\nhttps://order.campero.com",
+        priority: "",
+        linkLabel: "",
+        linkHref: "",
+        notesPlaceholder: "",
+        fields: [
+
+        ],
+      }),
+      createDigitalAsset({
+        id: "whatsappCopy",
+        title: "WhatsApp Copy",
+        specs: "No character limit - cannot be segmented",
+        enabled: false,
+        notes: "",
+        priority: "",
+        linkLabel: "",
+        linkHref: "",
+        notesPlaceholder: "",
+        fields: [
+
+        ],
+      }),
+      createDigitalAsset({
+        id: "socialHeaders",
+        title: "Social Headers",
+        specs: "Static (unless noted otherwise)",
+        enabled: false,
+        notes: "",
+        priority: "",
+        linkLabel: "",
+        linkHref: "",
+        notesPlaceholder: "",
+        fields: [
+
+        ],
+      }),
+    ],
+
+    itElements: [
+          {
+                "id": "oloKoalaImage",
+                "title": "OLO / Koala Image",
+                "specs": "Static Product Images",
+                "enabled": true,
+                "notes": "Static Product Image\n• OLO: 900 x 600px PNG image(s)\n• Koala: 2000 x 2000px PNG image(s)",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "oloDescription",
+                "title": "OLO Description",
+                "specs": "Category, Title, and Description for online ordering",
+                "enabled": false,
+                "notes": "• Category: Under XXX\n• Title:\n• Description:",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "ezCaterImage",
+                "title": "EZ Cater Image",
+                "specs": "Static Product Image - 1200 x 800px PNG image(s)",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          }
+    ],
+
+    paidMedia: [
+          {
+                "id": "metaPaidSocial",
+                "title": "Meta Paid Social",
+                "specs": "1080×1080 / 1080×1920, Animated (unless noted otherwise)",
+                "enabled": true,
+                "notes": "• Headline: 27 characters (including spaces)\n• Primary text/body: 125 characters (including spaces)",
+                "priority": "Due to Tru 1 week early",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "pmaxGoogle",
+                "title": "PMAX / Google",
+                "specs": "1200x1200; 1200x628, Optional 960x1200 - Animated (unless noted otherwise)",
+                "enabled": true,
+                "notes": "",
+                "priority": "Due to Tru 1 week early",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "tiktok",
+                "title": "TikTok Paid Media",
+                "specs": "Primary text ≤100 characters",
+                "enabled": false,
+                "notes": "Primary Text: 100 Characters",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "olvYoutube",
+                "title": "OLV / YouTube",
+                "specs": "",
+                "enabled": false,
+                "notes": "3 Short headlines:\n• 30 characters max: • 30 characters max: • 15 characters max\n\n1 Long headline:\n• 90 characters max:\n\n2 Description:\n• 90 characters max: • 60 characters max\n\n1 CTA",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          }
+    ],
+
+    pr: {
+          "custom": [],
+          "blogPost": {
+                "notes": "",
+                "enabled": true,
+                "imageSpecs": "Link to specs example files"
+          },
+          "pressRelease": {
+                "bySpm": false,
+                "notes": "",
+                "enabled": false
+          }
     },
 
-    physicalAssets: createPhysicalAssets(),
+    physicalAssets: [
+          {
+                "id": "menuBoard",
+                "label": "Menu Board",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "mtvScreen",
+                "label": "MTV Screen",
+                "specs": "",
+                "enabled": true,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "dtScreen",
+                "label": "DT Screen",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "lto4thScreen",
+                "label": "LTO / 4th Screen",
+                "specs": "",
+                "enabled": true,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "bouncebackFront",
+                "label": "Bounceback (Front)",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "bouncebackBack",
+                "label": "Bounceback (Back)",
+                "specs": "",
+                "enabled": true,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "bouncebackInstructions",
+                "label": "Bounceback Instruction Sheet",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "windowClings",
+                "label": "Window Clings",
+                "specs": "24×32 / 36×48",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "doorClings",
+                "label": "Door Clings",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "dtTopper",
+                "label": "DT Topper",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "registerDangler",
+                "label": "Register Dangler",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "resSign",
+                "label": "RES Sign",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "counterCard",
+                "label": "Counter Card",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "digitalAFrame",
+                "label": "Digital A Frame",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "aFrame",
+                "label": "A Frame",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "posOrderScreen",
+                "label": "POS Order Screen",
+                "specs": "",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          },
+          {
+                "id": "kioskHomepage",
+                "label": "Kiosk Homepage Screen / Menu Cover",
+                "specs": "1080×1920 JPEG/GIF ≤20MB",
+                "enabled": false,
+                "notes": "",
+                "priority": "",
+                "linkLabel": "",
+                "linkHref": "",
+                "notesPlaceholder": ""
+          }
+    ],
 
     legal: {
-      templateId: "bogoLoyalty",
-      legalText:
-        findTemplateText(BUILTIN_LEGAL_TEMPLATES, "bogoLoyalty") || "",
+      templateId: "standard",
+      legalText: "Offer valid at participating Pollo Campero locations only. While supplies last. No cash value. Not valid with any other offer, coupon, or discount. Pollo Campero reserves the right to modify or cancel this offer at any time. Valid only during the promotional period. See store for details.",
       copyrightVariant: "digital",
-      copyrightYear: new Date().getFullYear(),
+      copyrightYear: 2026,
     },
 
     lastSaved: new Date().toISOString(),

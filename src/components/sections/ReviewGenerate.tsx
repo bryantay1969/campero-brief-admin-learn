@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useBriefStore } from "@/store/briefStore";
 import { SectionCard } from "@/components/ui/FormControls";
 import { BriefPreview } from "@/components/preview/BriefPreview";
+import { downloadBriefJson } from "@/lib/briefExport";
 import { downloadBriefPdf } from "@/lib/pdf";
 import { getOrCreatePreviewUrl } from "@/lib/supabase/briefsApi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   CheckCircle2,
   Download,
+  FileJson,
   FileText,
   Link2,
   Loader2,
@@ -17,6 +19,7 @@ import {
 
 export function ReviewGenerate() {
   const brief = useBriefStore((s) => s.brief);
+  const library = useBriefStore((s) => s.library);
   const setShowPreview = useBriefStore((s) => s.setShowPreview);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
   const { canEdit, cloudEnabled } = useAuth();
@@ -43,6 +46,13 @@ export function ReviewGenerate() {
     } finally {
       setPdfLoading(false);
     }
+  };
+
+  const handleExportJson = () => {
+    const libName = activeBriefId
+      ? library.find((b) => b.id === activeBriefId)?.name
+      : undefined;
+    downloadBriefJson(brief, libName || brief.promoName || "promo-brief");
   };
 
   const handleCopyLink = async () => {
@@ -139,6 +149,15 @@ export function ReviewGenerate() {
             <Download className="h-4 w-4" />
           )}
           Download PDF
+        </button>
+        <button
+          type="button"
+          onClick={handleExportJson}
+          className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-campero-orange/40 hover:bg-orange-50 transition-colors"
+          title="Download this brief as JSON (for backup or Load sample updates)"
+        >
+          <FileJson className="h-4 w-4" />
+          Export JSON
         </button>
         <button
           type="button"

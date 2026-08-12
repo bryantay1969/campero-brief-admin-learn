@@ -306,7 +306,7 @@ export function LeftToolbar({
           )}
         >
           <FileStack className="h-3.5 w-3.5 shrink-0" />
-          Load sample
+          Load sample brief
         </button>
         {canEdit && (
           <button
