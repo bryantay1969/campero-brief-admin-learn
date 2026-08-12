@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { BriefPreview } from "@/components/preview/BriefPreview";
 import { fetchPublicBriefPreview } from "@/lib/supabase/briefsApi";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
@@ -69,9 +70,7 @@ export default function PublicBriefPreviewPage() {
       <header className="border-b border-orange-100 bg-white">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white font-black text-sm shadow-md shadow-orange-200">
-              PC
-            </div>
+            <BrandMark size="md" />
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-campero-orange">
                 Public preview · view only
@@ -87,10 +86,6 @@ export default function PublicBriefPreviewPage() {
               )}
             </div>
           </div>
-          <p className="text-xs text-stone-500 max-w-xs text-right">
-            Read-only share link. No login required. Editing is not available
-            here.
-          </p>
         </div>
       </header>
 

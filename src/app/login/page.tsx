@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BrandMark } from "@/components/BrandMark";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LoginPage() {
@@ -33,9 +34,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#FFFBF7] flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white shadow-sm p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white font-black text-sm">
-            PC
-          </div>
+          <BrandMark size="md" />
           <div>
             <h1 className="text-lg font-bold text-stone-900">
               Campero Brief Builder

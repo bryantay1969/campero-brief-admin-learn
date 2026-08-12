@@ -7,6 +7,7 @@ import { useBriefStore } from "@/store/briefStore";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { BrandMark } from "@/components/BrandMark";
 import {
   BookOpen,
   Check,
@@ -146,9 +147,7 @@ export function LeftToolbar({
       <div className="shrink-0 border-b border-orange-50 px-4 py-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white font-black text-xs shadow-md shadow-orange-200">
-              PC
-            </div>
+            <BrandMark size="sm" />
             <div className="min-w-0">
               <p className="text-sm font-bold tracking-tight text-stone-900 leading-tight">
                 Promo Brief
