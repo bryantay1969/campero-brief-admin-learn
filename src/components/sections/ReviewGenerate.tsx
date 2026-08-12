@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useBriefStore } from "@/store/briefStore";
 import { SectionCard } from "@/components/ui/FormControls";
 import { BriefPreview } from "@/components/preview/BriefPreview";
+import { downloadBriefDocx } from "@/lib/briefDocx";
 import { downloadBriefJson } from "@/lib/briefExport";
 import { downloadBriefPdf } from "@/lib/pdf";
 import { getOrCreatePreviewUrl } from "@/lib/supabase/briefsApi";
@@ -25,9 +26,11 @@ export function ReviewGenerate() {
   const { canEdit, cloudEnabled } = useAuth();
 
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [docxLoading, setDocxLoading] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "ok" | "err">("idle");
   const [copyBusy, setCopyBusy] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [docxError, setDocxError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
   // Always show the generated brief when Review is open
@@ -45,6 +48,18 @@ export function ReviewGenerate() {
       setPdfError(e instanceof Error ? e.message : "PDF export failed");
     } finally {
       setPdfLoading(false);
+    }
+  };
+
+  const handleDocx = async () => {
+    setDocxLoading(true);
+    setDocxError(null);
+    try {
+      await downloadBriefDocx(brief);
+    } catch (e) {
+      setDocxError(e instanceof Error ? e.message : "Word export failed");
+    } finally {
+      setDocxLoading(false);
     }
   };
 
@@ -152,6 +167,20 @@ export function ReviewGenerate() {
         </button>
         <button
           type="button"
+          onClick={() => void handleDocx()}
+          disabled={docxLoading}
+          className="inline-flex items-center gap-2 rounded-xl border border-campero-orange/40 bg-orange-50 px-5 py-3 text-sm font-bold text-campero-orange shadow-sm hover:bg-orange-100 transition-colors disabled:opacity-60"
+          title="Download this brief as a Word document"
+        >
+          {docxLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="h-4 w-4" />
+          )}
+          Download Word
+        </button>
+        <button
+          type="button"
           onClick={handleExportJson}
           className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-campero-orange/40 hover:bg-orange-50 transition-colors"
           title="Download this brief as JSON (for backup or Load sample updates)"
@@ -193,6 +222,12 @@ export function ReviewGenerate() {
         <p className="text-sm text-red-600 flex items-center gap-2">
           <FileText className="h-4 w-4" />
           {pdfError}
+        </p>
+      )}
+      {docxError && (
+        <p className="text-sm text-red-600 flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          {docxError}
         </p>
       )}
       {linkError && (
