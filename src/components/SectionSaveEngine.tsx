@@ -46,7 +46,7 @@ export function SectionSaveEngine({
       !!state.brief.promoName.trim() ||
       !!state.brief.projectLead.trim() ||
       !!state.brief.locations.trim() ||
-      state.brief.messagingBullets.some((b) => b.text.trim()) ||
+      !!state.brief.messagingBullets.trim() ||
       !!state.brief.legal.legalText.trim();
     if (!hasContent && !state.activeBriefId) return;
 

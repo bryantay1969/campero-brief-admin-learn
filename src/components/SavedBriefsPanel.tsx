@@ -1,11 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBriefStore } from "@/store/briefStore";
 import { formatDisplayDate } from "@/lib/utils";
-import { downloadBriefJson, parseImportFile } from "@/lib/briefExport";
-import { defaultBriefName } from "@/lib/briefIds";
 import { downloadBriefPdf } from "@/lib/pdf";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -14,7 +12,6 @@ import {
   fetchCloudBriefById,
   getOrCreatePreviewUrl,
   renameCloudBrief,
-  upsertCloudBrief,
 } from "@/lib/supabase/briefsApi";
 import {
   Check,
@@ -24,10 +21,7 @@ import {
   Link2,
   Loader2,
   Pencil,
-  Plus,
-  Save,
   Trash2,
-  Upload,
   X,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -40,38 +34,25 @@ export function SavedBriefsPanel() {
   const library = useBriefStore((s) => s.library);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
   const isDirty = useBriefStore((s) => s.isDirty);
-  const brief = useBriefStore((s) => s.brief);
   const openFromLibrary = useBriefStore((s) => s.openFromLibrary);
   const deleteFromLibrary = useBriefStore((s) => s.deleteFromLibrary);
   const renameInLibrary = useBriefStore((s) => s.renameInLibrary);
   const duplicateInLibrary = useBriefStore((s) => s.duplicateInLibrary);
-  const saveToLibrary = useBriefStore((s) => s.saveToLibrary);
-  const saveAsNew = useBriefStore((s) => s.saveAsNew);
   const applyCloudSave = useBriefStore((s) => s.applyCloudSave);
-  const newBrief = useBriefStore((s) => s.newBrief);
-  const importIntoLibrary = useBriefStore((s) => s.importIntoLibrary);
   const { cloudEnabled, user, canEdit, isViewer, canAdmin, refreshCloudLibrary } =
     useAuth();
 
   const [query, setQuery] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [saveName, setSaveName] = useState("");
-  const [showSaveAs, setShowSaveAs] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const flash = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 2200);
   };
-
-  const activeRecord = useMemo(
-    () => library.find((b) => b.id === activeBriefId) || null,
-    [library, activeBriefId]
-  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -136,67 +117,6 @@ export function SavedBriefsPanel() {
     flash("Brief not found in this browser’s library");
   };
 
-  const handleSave = async () => {
-    if (!canEdit) {
-      flash("View only — you cannot save briefs");
-      return;
-    }
-    const name =
-      saveName.trim() ||
-      activeRecord?.name ||
-      defaultBriefName(brief.promoName, brief.projectLead);
-    saveToLibrary(name);
-    setSaveName("");
-    setShowSaveAs(false);
-    if (cloudEnabled && user) {
-      try {
-        const saved = await upsertCloudBrief({
-          id: activeBriefId,
-          name,
-          brief,
-          userId: user.id,
-        });
-        applyCloudSave(saved);
-        await refreshCloudLibrary();
-        flash(`Saved to cloud “${saved.name}”`);
-      } catch (e) {
-        flash(e instanceof Error ? e.message : "Cloud save failed");
-      }
-    } else {
-      flash(`Saved “${name}” (this browser only)`);
-    }
-  };
-
-  const handleSaveAs = async () => {
-    if (!canEdit) {
-      flash("View only — you cannot save briefs");
-      return;
-    }
-    const name =
-      saveName.trim() ||
-      defaultBriefName(brief.promoName, brief.projectLead);
-    saveAsNew(name);
-    setSaveName("");
-    setShowSaveAs(false);
-    if (cloudEnabled && user) {
-      try {
-        const saved = await upsertCloudBrief({
-          id: null,
-          name,
-          brief,
-          userId: user.id,
-        });
-        applyCloudSave(saved);
-        await refreshCloudLibrary();
-        flash(`Saved as “${saved.name}” (cloud)`);
-      } catch (e) {
-        flash(e instanceof Error ? e.message : "Cloud save failed");
-      }
-    } else {
-      flash(`Saved as “${name}” (this browser only)`);
-    }
-  };
-
   const handleDelete = async (id: string, name: string) => {
     if (!canEdit && !canAdmin) {
       flash("View only — you cannot delete briefs");
@@ -250,41 +170,6 @@ export function SavedBriefsPanel() {
     setRenameValue("");
   };
 
-  const handleImport = async (file: File) => {
-    try {
-      const text = await file.text();
-      const parsed = parseImportFile(text);
-      const saved = importIntoLibrary(parsed);
-      flash(`Imported “${saved.name}”`);
-    } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Import failed");
-    }
-  };
-
-  const handleNew = () => {
-    const hasContent =
-      isDirty ||
-      !!brief.promoName.trim() ||
-      !!brief.projectLead.trim() ||
-      !!activeBriefId;
-    if (hasContent) {
-      const ok = window.confirm(
-        [
-          "Start a new empty brief?",
-          "",
-          "WARNING: Content in the current brief will NOT be saved.",
-          "Unsaved edits on this form will be discarded.",
-          "",
-          "Briefs already saved in My briefs are kept.",
-        ].join("\n")
-      );
-      if (!ok) return;
-    }
-    newBrief();
-    setShow(false);
-    flash("New empty brief ready");
-  };
-
   return (
     <>
       <div
@@ -327,145 +212,6 @@ export function SavedBriefsPanel() {
           </div>
         </header>
 
-        {/* Current brief actions */}
-        <div className="border-b border-stone-100 px-5 py-4 space-y-3 bg-stone-50/50">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">
-                Currently editing
-              </p>
-              <p className="text-sm font-bold text-stone-900 truncate">
-                {brief.promoName.trim() ||
-                  activeRecord?.name ||
-                  "Untitled draft"}
-                {isDirty && (
-                  <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
-                    Unsaved
-                  </span>
-                )}
-              </p>
-              {activeRecord && (
-                <p className="text-xs text-stone-400 mt-0.5">
-                  Last library save{" "}
-                  {format(new Date(activeRecord.updatedAt), "MMM d, yyyy · h:mm a")}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {showSaveAs ? (
-            <div className="space-y-2">
-              <input
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                placeholder={defaultBriefName(
-                  brief.promoName,
-                  brief.projectLead
-                )}
-                className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm focus:border-campero-orange focus:outline-none focus:ring-2 focus:ring-campero-orange/20"
-                autoFocus
-              />
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleSaveAs}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  Save as new
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSaveAs(false);
-                    setSaveName("");
-                  }}
-                  className="rounded-lg border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-600"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {canEdit ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => void handleSave()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-campero-orange-dark"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    {activeBriefId ? "Save changes" : "Save to library"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSaveName(
-                        activeRecord
-                          ? `${activeRecord.name} (copy)`
-                          : defaultBriefName(brief.promoName, brief.projectLead)
-                      );
-                      setShowSaveAs(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-orange-50"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Save as…
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNew}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    New brief
-                  </button>
-                </>
-              ) : (
-                <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  View only — open briefs below; you cannot save or delete.
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                downloadBriefJson(
-                  brief,
-                  activeRecord?.name || brief.promoName
-                )
-              }
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Export JSON
-            </button>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              Import JSON
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleImport(f);
-                e.target.value = "";
-              }}
-            />
-          </div>
-        </div>
-
         {/* Search + list */}
         <div className="px-5 py-3 border-b border-stone-100">
           <input
@@ -487,7 +233,7 @@ export function SavedBriefsPanel() {
               </p>
               <p className="text-xs text-stone-400 mt-1 max-w-xs mx-auto">
                 {library.length === 0
-                  ? "Save the current form to keep it for later edits when the project changes."
+                  ? "Saved briefs will appear here after you save from the form."
                   : "Try a different search."}
               </p>
             </div>

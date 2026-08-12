@@ -5,6 +5,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminGate } from "@/components/auth/AdminGate";
 import {
+  AdminEmptyState,
+  AdminFlash,
+  AdminHeader,
+  AdminInactiveBadge,
+  AdminItemActions,
+  AdminListTile,
+  AdminMain,
+  AdminPageShell,
+  AdminPriorityBadge,
+  AdminSectionHeader,
+} from "@/components/admin/AdminUi";
+import {
   CATALOG_SECTION_META,
   type CatalogSection,
 } from "@/lib/formAssetCatalog";
@@ -15,7 +27,7 @@ import {
   updateCatalogItem,
   type FormAssetCatalogRow,
 } from "@/lib/supabase/formAssetCatalogApi";
-import { FileStack, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
 
 const SECTIONS: CatalogSection[] = ["digital", "paid", "physical", "pr"];
 
@@ -163,109 +175,27 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBF7] text-stone-900">
-      <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white">
-              <FileStack className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">{meta.label}</h1>
-              <p className="text-xs text-stone-500">
-                Global catalog · {meta.formTab} tab for everyone
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add for everyone
-            </button>
-            <Link
-              href="/admin/it/"
-              className="inline-flex items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              IT / OLO
-            </Link>
-            <Link
-              href="/admin/legal/"
-              className="inline-flex items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              Legal
-            </Link>
-            <Link
-              href="/admin/"
-              className="inline-flex items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              Users
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white"
-            >
-              Brief builder
-            </Link>
-          </div>
-        </div>
-      </header>
+    <AdminPageShell>
+      <AdminHeader
+        title={meta.label}
+        subtitle={`Global catalog · ${meta.formTab} tab for everyone`}
+        onRefresh={() => void load()}
+      />
 
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
-        <div className="flex flex-wrap gap-2">
-          {SECTIONS.map((s) => (
-            <Link
-              key={s}
-              href={`/admin/catalog/${s}/`}
-              className={
-                s === section
-                  ? "rounded-full bg-campero-orange px-3 py-1.5 text-xs font-bold text-white"
-                  : "rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-              }
-            >
-              {CATALOG_SECTION_META[s].shortLabel}
-            </Link>
-          ))}
-        </div>
-
-        <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 text-sm text-violet-950">
-          <p className="font-semibold">Shared checklist for {meta.formTab}</p>
-          <p className="mt-1 text-violet-900/90">
-            Same options on every catalog: <strong>name</strong>,{" "}
-            <strong>subtitle</strong>, <strong>priority callout</strong>,{" "}
-            <strong>link label / URL</strong>, <strong>description hint</strong>
-            , and <strong>pre-filled description</strong>. Applies for everyone
-            the next time they open the tab.
-          </p>
-        </section>
-
-        {message && (
-          <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-            {message}
-          </p>
-        )}
-        {error && (
-          <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 whitespace-pre-wrap">
-            {error}
-            {(error.includes("relation") || error.includes("does not exist")) && (
+      <AdminMain>
+        <AdminFlash
+          message={message}
+          error={error}
+          sqlHint={
+            error &&
+            (error.includes("relation") || error.includes("does not exist")) ? (
               <span className="block mt-2 text-xs">
                 Run <code>supabase/form-asset-catalogs.sql</code> in Supabase
                 first.
               </span>
-            )}
-          </p>
-        )}
+            ) : null
+          }
+        />
 
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
@@ -452,74 +382,67 @@ function CatalogAdminPanel({ section }: { section: CatalogSection }) {
           </div>
         )}
 
-        <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-          <div className="border-b px-5 py-3 font-bold text-sm">
-            Assets ({rows.length})
-          </div>
-          {loading ? (
-            <p className="p-8 text-center text-sm text-stone-400">Loading…</p>
-          ) : rows.length === 0 ? (
-            <p className="p-8 text-center text-sm text-stone-400">
-              No rows. Run <code>form-asset-catalogs.sql</code> or add an asset.
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {rows.map((row) => (
-                <li key={row.id} className="px-5 py-4 flex justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold">
+        <div className="space-y-3">
+          <AdminSectionHeader
+            title={meta.shortLabel}
+            count={rows.length}
+            loading={loading}
+            onAdd={openCreate}
+          />
+          <div className="space-y-3">
+            {loading ? (
+              <AdminEmptyState>Loading…</AdminEmptyState>
+            ) : rows.length === 0 ? (
+              <AdminEmptyState>
+                No rows. Run <code>form-asset-catalogs.sql</code> or add an
+                asset.
+              </AdminEmptyState>
+            ) : (
+              rows.map((row) => (
+                <AdminListTile
+                  key={row.id}
+                  active={row.is_active}
+                  title={
+                    <>
                       {row.title}
-                      {!row.is_active && (
-                        <span className="ml-2 text-[10px] uppercase text-stone-400">
-                          Inactive
-                        </span>
-                      )}
+                      {!row.is_active && <AdminInactiveBadge />}
+                    </>
+                  }
+                  actions={
+                    <AdminItemActions
+                      busy={busy}
+                      onEdit={() => openEdit(row)}
+                      onDelete={() => void onDelete(row)}
+                    />
+                  }
+                >
+                  {row.specs?.trim() && (
+                    <p className="block text-xs text-stone-500 mt-0.5">
+                      {row.specs}
                     </p>
-                    {row.specs && (
-                      <p className="text-xs text-stone-500">{row.specs}</p>
-                    )}
-                    {row.priority_default && (
-                      <p className="text-[11px] text-amber-800 mt-0.5">
-                        Priority: {row.priority_default}
-                      </p>
-                    )}
-                    {(row.link_label || row.link_href) && (
-                      <p className="text-[11px] text-stone-500 mt-0.5 truncate">
-                        Link: {row.link_label || row.link_href}
-                      </p>
-                    )}
-                    {row.notes_default && (
-                      <p className="text-xs text-stone-600 line-clamp-2 mt-1 whitespace-pre-wrap">
-                        {row.notes_default}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(row)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-bold text-violet-900"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onDelete(row)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-2 py-1 text-[11px] font-semibold text-red-600"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
-    </div>
+                  )}
+                  {row.priority_default?.trim() && (
+                    <AdminPriorityBadge>
+                      {row.priority_default}
+                    </AdminPriorityBadge>
+                  )}
+                  {(row.link_label || row.link_href) && (
+                    <p className="mt-1 text-xs font-semibold text-campero-orange truncate">
+                      {row.link_label || row.link_href}
+                    </p>
+                  )}
+                  {row.notes_default?.trim() && (
+                    <p className="text-xs text-stone-600 line-clamp-2 mt-2 whitespace-pre-wrap">
+                      {row.notes_default}
+                    </p>
+                  )}
+                </AdminListTile>
+              ))
+            )}
+          </div>
+        </div>
+      </AdminMain>
+    </AdminPageShell>
   );
 }
 

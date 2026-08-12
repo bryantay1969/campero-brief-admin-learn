@@ -12,15 +12,7 @@ import {
   apiUpdateUser,
 } from "@/lib/supabase/adminClientApi";
 import { format } from "date-fns";
-import {
-  FileText,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Shield,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Pencil, Plus, RefreshCw, Shield, Trash2, X } from "lucide-react";
 
 const ROLES: UserRole[] = ["admin", "editor", "viewer"];
 
@@ -218,37 +210,66 @@ function AdminPanel() {
               Add user
             </button>
             <Link
-              href="/admin/legal/"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Legal templates
-            </Link>
-            <Link
-              href="/admin/it/"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              IT / OLO
-            </Link>
-            <Link
-              href="/admin/catalog/digital/"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Form catalogs
-            </Link>
-            <Link
               href="/"
               className="inline-flex items-center rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white hover:bg-campero-orange-dark"
             >
-              Brief builder
+              Back to brief
             </Link>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
+        <section className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-bold text-stone-900 mb-1">
+            Form catalogs
+          </h2>
+          <p className="text-xs text-stone-500 mb-4">
+            Shared lists that power each tab — same add / edit / delete pattern
+            as Digital, Paid Media, PR, and IT / OLO.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Link
+              href="/admin/overview/"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
+            >
+              <p className="text-sm font-bold text-stone-900">Overview</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Project leads &amp; location options
+              </p>
+            </Link>
+            <Link
+              href="/admin/it/"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
+            >
+              <p className="text-sm font-bold text-stone-900">IT / OLO</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Online ordering checklist assets
+              </p>
+            </Link>
+            <Link
+              href="/admin/catalog/digital/"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
+            >
+              <p className="text-sm font-bold text-stone-900">
+                Digital · Paid · In-Store · PR
+              </p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Form asset catalogs
+              </p>
+            </Link>
+            <Link
+              href="/admin/legal/"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
+            >
+              <p className="text-sm font-bold text-stone-900">Legal templates</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Shared legal chips &amp; copy
+              </p>
+            </Link>
+          </div>
+        </section>
+
         <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-bold text-stone-900 mb-1">Roles</h2>
           <ul className="text-sm text-stone-600 space-y-1 list-disc pl-5">

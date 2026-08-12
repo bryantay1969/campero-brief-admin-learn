@@ -1,10 +1,5 @@
 export type YesNo = "yes" | "no" | "";
 
-export interface MessagingBullet {
-  id: string;
-  text: string;
-}
-
 /** Named photography / creative asset reference with optional link. */
 export interface PhotoAssetReference {
   id: string;
@@ -225,7 +220,8 @@ export interface PromoBrief {
   dropOfferNote: string;
 
   // Messaging & Creative
-  messagingBullets: MessagingBullet[];
+  /** Free-text messaging (legacy array of {id,text} is normalized on load). */
+  messagingBullets: string;
   creativeNotes: string;
   /** Photography / asset references (name + link pairs). */
   foodPhotoReferences: PhotoAssetReference[];

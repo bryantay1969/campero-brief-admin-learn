@@ -25,6 +25,24 @@ function uid(): string {
   return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Migrate legacy bullet list → single free-text field. */
+function normalizeMessagingBullets(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (item && typeof item === "object" && "text" in item) {
+          return String((item as { text?: unknown }).text ?? "").trim();
+        }
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  return "";
+}
+
 /** Migrate legacy string photo refs → name/link pairs. */
 function normalizePhotoRefs(value: unknown): PhotoAssetReference[] {
   if (Array.isArray(value)) {
@@ -71,9 +89,9 @@ function normalizeBrief(brief: PromoBrief | null | undefined): PromoBrief {
       paidMedia: normalizePaidMedia(
         (brief as { paidMedia?: unknown }).paidMedia
       ),
-      messagingBullets: Array.isArray(brief.messagingBullets)
-        ? brief.messagingBullets
-        : createEmptyBrief().messagingBullets,
+      messagingBullets: normalizeMessagingBullets(
+        (brief as { messagingBullets?: unknown }).messagingBullets
+      ),
       foodPhotoReferences: normalizePhotoRefs(
         (brief as { foodPhotoReferences?: unknown }).foodPhotoReferences
       ),

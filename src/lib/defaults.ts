@@ -165,7 +165,7 @@ export function createEmptyBrief(): PromoBrief {
     dropOfferIntoLoyalty: false,
     dropOfferNote: "",
 
-    messagingBullets: [{ id: uid(), text: "" }],
+    messagingBullets: "",
     creativeNotes: "",
     foodPhotoReferences: [{ id: uid(), name: "", link: "" }],
     noCamperoLogo: false,
@@ -208,13 +208,12 @@ export function createSampleBrief(): PromoBrief {
   const empty = createEmptyBrief();
   return {
     ...empty,
-    projectLead: "Marketing Team",
+    projectLead: "Alex Rivera",
     promoName: "National Fried Chicken Day",
     launchDate: "2025-07-06",
     endDate: "2025-07-06",
     oneDayOnly: true,
-    quickNote:
-      "This is email and organic social only. One-day celebration promo for National Fried Chicken Day.",
+    quickNote: "",
     loyaltyOnly: "yes",
     promoCodeNeeded: "no",
     locations: "National",
@@ -222,24 +221,8 @@ export function createSampleBrief(): PromoBrief {
     dropOfferNote:
       "Drop BOGO (or featured fried chicken offer) into eligible Rewards accounts in the Rewards section ahead of launch.",
 
-    messagingBullets: [
-      {
-        id: uid(),
-        text: "Celebrate National Fried Chicken Day with Pollo Campero",
-      },
-      {
-        id: uid(),
-        text: "Loyalty members: exclusive offer waiting in Rewards",
-      },
-      {
-        id: uid(),
-        text: "Crispy, golden fried chicken — available for one day only",
-      },
-      {
-        id: uid(),
-        text: "Open the app or sign in at www.campero.com to redeem",
-      },
-    ],
+    messagingBullets:
+      "Celebrate National Fried Chicken Day with Pollo Campero\nLoyalty members: exclusive offer waiting in Rewards\nCrispy, golden fried chicken — available for one day only\nOpen the app or sign in at www.campero.com to redeem",
     creativeNotes:
       "Hero: golden fried chicken pieces, appetizing close-up with warm lighting. Emphasize crunch and Campero seasoning. Keep plates clean — no unauthorized sides. Lifestyle optional: family sharing at table. Tone: celebratory, warm, limited-time urgency without feeling spammy.",
     foodPhotoReferences: [

@@ -74,7 +74,7 @@ export function LeftToolbar({
       !!brief.promoName.trim() ||
       !!brief.projectLead.trim() ||
       !!brief.locations.trim() ||
-      brief.messagingBullets.some((b) => b.text.trim()) ||
+      !!brief.messagingBullets.trim() ||
       !!brief.legal.legalText.trim() ||
       isDirty;
 

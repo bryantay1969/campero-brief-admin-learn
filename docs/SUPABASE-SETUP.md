@@ -76,7 +76,20 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-## 7. Global form asset catalogs (optional but recommended)
+## 7. Overview options — project leads & locations (optional but recommended)
+
+Same admin pattern as IT / OLO and Form catalogs (Digital, Paid, PR).
+
+1. **SQL Editor** → open `supabase/overview-options.sql`
+2. Copy all → **Run**  
+   (If “Running…” hangs: cancel, then run table+policies first, seeds second. Requires existing `is_admin()` from other catalog scripts.)
+3. Open **Admin** → **Form catalogs** card → **Overview**  
+   Or from the brief builder Overview tab → **Manage overview options** (admins only)
+4. On one page: **Project leads** and **Locations** sections, each with **Add for everyone** / Edit / Delete
+
+These power the Project Lead dropdown and Locations suggestions on the Overview tab.
+
+## 8. Global form asset catalogs (optional but recommended)
 
 **IT / OLO**
 
@@ -91,7 +104,7 @@ where email = 'you@example.com';
 
 Every catalog shares the same admin fields: name, subtitle, priority callout, link label, link URL, description hint, and pre-filled description.
 
-## 8. Public preview links (optional but recommended)
+## 9. Public preview links (optional but recommended)
 
 For **Copy preview link** (anyone with the link can view a read-only brief):
 
@@ -100,7 +113,7 @@ For **Copy preview link** (anyone with the link can view a read-only brief):
 
 This adds a `share_token` column and a secure RPC so only people who have the token can load that one preview (not the whole library).
 
-## 8. Service role key (for Admin add / edit / delete users)
+## 10. Service role key (for Admin add / edit / delete users)
 
 User create/delete uses Supabase Auth Admin APIs, which need the **service role** key on the **server only**.
 

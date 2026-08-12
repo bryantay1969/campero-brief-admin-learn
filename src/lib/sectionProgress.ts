@@ -6,7 +6,7 @@ export function sectionComplete(id: SectionId, brief: PromoBrief): boolean {
     case "overview":
       return !!(brief.projectLead && brief.promoName && brief.launchDate);
     case "messaging":
-      return brief.messagingBullets.some((b) => b.text.trim());
+      return !!brief.messagingBullets.trim();
     case "digital":
       return (
         Array.isArray(brief.digitalAssets) &&

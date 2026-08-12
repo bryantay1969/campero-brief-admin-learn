@@ -1,7 +1,6 @@
 "use client";
 
 import { cn, charLimitClass } from "@/lib/utils";
-import { Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function FieldLabel({
@@ -253,64 +252,4 @@ export function NotesField({
   );
 }
 
-export function DynamicList({
-  items,
-  onChange,
-  placeholder = "Enter item…",
-  addLabel = "Add line",
-}: {
-  items: { id: string; text: string }[];
-  onChange: (items: { id: string; text: string }[]) => void;
-  placeholder?: string;
-  addLabel?: string;
-}) {
-  return (
-    <div className="space-y-2">
-      {items.map((item, index) => (
-        <div key={item.id} className="flex gap-2">
-          <span className="flex h-10 w-8 shrink-0 items-center justify-center text-xs font-semibold text-stone-400">
-            {index + 1}.
-          </span>
-          <TextInput
-            value={item.text}
-            onChange={(e) => {
-              const next = items.map((it) =>
-                it.id === item.id ? { ...it, text: e.target.value } : it
-              );
-              onChange(next);
-            }}
-            placeholder={placeholder}
-          />
-          <button
-            type="button"
-            onClick={() => onChange(items.filter((it) => it.id !== item.id))}
-            disabled={items.length <= 1}
-            className="shrink-0 rounded-lg border border-stone-200 p-2 text-stone-400 hover:text-red-600 hover:border-red-200 disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label="Remove line"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() =>
-          onChange([
-            ...items,
-            {
-              id:
-                typeof crypto !== "undefined" && "randomUUID" in crypto
-                  ? crypto.randomUUID()
-                  : `id-${Date.now()}`,
-              text: "",
-            },
-          ])
-        }
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-campero-orange hover:text-campero-orange-dark mt-1"
-      >
-        <Plus className="h-4 w-4" />
-        {addLabel}
-      </button>
-    </div>
-  );
-}
+

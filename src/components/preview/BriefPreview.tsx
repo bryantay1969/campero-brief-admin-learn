@@ -2,7 +2,7 @@
 
 import type { PromoBrief } from "@/lib/types";
 import { formatDateRange, formatPhotoRefs } from "@/lib/utils";
-import { getCopyrightLine } from "@/lib/legalTemplates";
+import { BRAND_GUIDELINES_PATH } from "@/lib/brandGuidelines";
 import { formatDigitalAssetDetail } from "@/lib/digitalAssets";
 import { formatITAssetDetail, IT_PROJECT_OWNER_NOTE } from "@/lib/itElements";
 import {
@@ -17,10 +17,11 @@ import {
 function Check({ on }: { on: boolean }) {
   return (
     <span
+      aria-hidden
       className={
         on
-          ? "inline-flex h-4 w-4 items-center justify-center rounded border border-campero-orange bg-campero-orange text-white text-[10px] font-bold"
-          : "inline-flex h-4 w-4 items-center justify-center rounded border border-stone-300 bg-white text-transparent text-[10px]"
+          ? "inline-flex size-4 shrink-0 items-center justify-center rounded border border-campero-orange bg-campero-orange text-white text-[10px] font-bold leading-none"
+          : "inline-flex size-4 shrink-0 items-center justify-center rounded border border-stone-300 bg-white text-transparent text-[10px] leading-none"
       }
     >
       ✓
@@ -38,7 +39,9 @@ function Row({
   return (
     <div className="grid grid-cols-[140px_1fr] gap-2 py-1.5 border-b border-stone-100 text-[12px] leading-snug">
       <div className="font-semibold text-stone-500">{label}</div>
-      <div className="text-stone-900">{children || "—"}</div>
+      <div className="text-stone-900 whitespace-pre-wrap">
+        {children || "—"}
+      </div>
     </div>
   );
 }
@@ -61,8 +64,10 @@ function AssetLine({
   detail?: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-2 py-1 text-[12px] leading-snug">
-      <Check on={on} />
+    <div className="flex items-start gap-2 py-1 text-[12px] leading-snug">
+      <span className="mt-0.5">
+        <Check on={on} />
+      </span>
       <div className={on ? "text-stone-900" : "text-stone-400"}>
         <span className="font-semibold">{title}</span>
         {detail && <span className="text-stone-600"> — {detail}</span>}
@@ -74,15 +79,23 @@ function AssetLine({
 export function BriefPreview({ brief }: { brief: PromoBrief }) {
   const dateRange = formatDateRange(brief.launchDate, brief.endDate);
 
-  const digital = brief.digitalAssets;
-  const it = Array.isArray(brief.itElements) ? brief.itElements : [];
-  const pm = Array.isArray(brief.paidMedia) ? brief.paidMedia : [];
-  const pr = brief.pr;
-  const copyright = getCopyrightLine(
-    brief.legal.copyrightVariant,
-    brief.legal.copyrightYear
+  // Only include checked/enabled assets; hide whole sections when empty
+  const digital = (brief.digitalAssets || []).filter((a) => a.enabled);
+  const it = (Array.isArray(brief.itElements) ? brief.itElements : []).filter(
+    (a) => a.enabled
   );
-
+  const pm = (Array.isArray(brief.paidMedia) ? brief.paidMedia : []).filter(
+    (a) => a.enabled
+  );
+  const pr = brief.pr;
+  const prCustom = (Array.isArray(pr.custom) ? pr.custom : []).filter(
+    (a) => a.enabled
+  );
+  const showPr =
+    pr.blogPost.enabled || pr.pressRelease.enabled || prCustom.length > 0;
+  const physical = (
+    Array.isArray(brief.physicalAssets) ? brief.physicalAssets : []
+  ).filter((a) => a.enabled);
   return (
     <article
       id="brief-preview"
@@ -95,10 +108,10 @@ export function BriefPreview({ brief }: { brief: PromoBrief }) {
           Pollo Campero · Marketing
         </p>
         <h1 className="text-2xl font-bold tracking-tight mt-1">
-          Promo Checklist Brief
+          {brief.promoName.trim() || "Untitled Promo"}
         </h1>
         <p className="text-sm mt-1 opacity-95 font-medium">
-          {brief.promoName || "Untitled Promo"}
+          Promo Checklist Brief
         </p>
       </header>
 
@@ -108,7 +121,7 @@ export function BriefPreview({ brief }: { brief: PromoBrief }) {
         <Row label="Project Lead">{brief.projectLead}</Row>
         <Row label="Promo Name">{brief.promoName}</Row>
         <Row label="Dates">{dateRange}</Row>
-        <Row label="Quick Note">{brief.quickNote}</Row>
+        <Row label="Project Description">{brief.quickNote}</Row>
         <Row label="Loyalty only">
           {brief.loyaltyOnly === "yes"
             ? "Yes"
@@ -127,147 +140,158 @@ export function BriefPreview({ brief }: { brief: PromoBrief }) {
 
         {/* Messaging */}
         <SectionTitle>Messaging & Creative Direction</SectionTitle>
-        <div className="text-[12px] mb-2">
-          <p className="font-semibold text-stone-500 mb-1">Messaging</p>
-          <ul className="list-disc pl-5 space-y-0.5 text-stone-900">
-            {brief.messagingBullets.filter((b) => b.text.trim()).length ===
-            0 ? (
-              <li className="text-stone-400">None</li>
-            ) : (
-              brief.messagingBullets
-                .filter((b) => b.text.trim())
-                .map((b) => <li key={b.id}>{b.text}</li>)
-            )}
-          </ul>
-        </div>
+        <Row label="Messaging">{brief.messagingBullets}</Row>
         <Row label="Creative notes">{brief.creativeNotes}</Row>
         <Row label="Photo/asset refs">
           {formatPhotoRefs(brief.foodPhotoReferences)}
         </Row>
-        {/* Digital */}
-        <SectionTitle>Digital Assets</SectionTitle>
-        {digital.length === 0 ? (
-          <p className="text-[12px] text-stone-400">None listed</p>
-        ) : (
-          digital.map((a) => (
-            <AssetLine
-              key={a.id}
-              on={a.enabled}
-              title={a.title || "Untitled"}
-              detail={formatDigitalAssetDetail(a) || undefined}
-            />
-          ))
+        {/* Digital — only when at least one asset is checked */}
+        {digital.length > 0 && (
+          <>
+            <SectionTitle>Digital Assets</SectionTitle>
+            {digital.map((a) => (
+              <AssetLine
+                key={a.id}
+                on
+                title={a.title || "Untitled"}
+                detail={formatDigitalAssetDetail(a) || undefined}
+              />
+            ))}
+          </>
         )}
 
-        {/* IT */}
-        <SectionTitle>IT / Online Ordering</SectionTitle>
-        {it.length === 0 ? (
-          <p className="text-[12px] text-stone-400">None listed</p>
-        ) : (
-          it.map((a) => (
-            <AssetLine
-              key={a.id}
-              on={a.enabled}
-              title={a.title || "Untitled"}
-              detail={formatITAssetDetail(a) || undefined}
-            />
-          ))
-        )}
-        <p className="mt-2 text-[10px] text-stone-500 italic leading-relaxed">
-          {IT_PROJECT_OWNER_NOTE}
-        </p>
-
-        {/* Paid */}
-        <SectionTitle>Paid Media</SectionTitle>
-        <p className="mb-2 text-[11px]">
-          <a
-            href={PAID_MEDIA_SPEC_SHEET.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-campero-orange underline"
-          >
-            {PAID_MEDIA_SPEC_SHEET.label}
-          </a>
-        </p>
-        {pm.length === 0 ? (
-          <p className="text-[12px] text-stone-400">None listed</p>
-        ) : (
-          pm.map((a) => (
-            <AssetLine
-              key={a.id}
-              on={a.enabled}
-              title={a.title || "Untitled"}
-              detail={formatPaidMediaDetail(a) || undefined}
-            />
-          ))
+        {/* IT — only when at least one asset is checked */}
+        {it.length > 0 && (
+          <>
+            <SectionTitle>IT / Online Ordering</SectionTitle>
+            {it.map((a) => (
+              <AssetLine
+                key={a.id}
+                on
+                title={a.title || "Untitled"}
+                detail={formatITAssetDetail(a) || undefined}
+              />
+            ))}
+            <p className="mt-2 text-[10px] text-stone-500 italic leading-relaxed">
+              {IT_PROJECT_OWNER_NOTE}
+            </p>
+          </>
         )}
 
-        {/* PR */}
-        <SectionTitle>PR</SectionTitle>
-        <AssetLine
-          on={pr.blogPost.enabled}
-          title="Blog Post – Campero Website"
-          detail={
-            <>
+        {/* Paid — only when at least one asset is checked */}
+        {pm.length > 0 && (
+          <>
+            <SectionTitle>Paid Media</SectionTitle>
+            <p className="mb-2 text-[11px]">
               <a
-                href={PR_BLOG_SPECS_LINK.href}
+                href={PAID_MEDIA_SPEC_SHEET.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-campero-orange underline font-semibold"
+                className="font-semibold text-campero-orange underline"
               >
-                {PR_BLOG_SPECS_LINK.label}
+                {PAID_MEDIA_SPEC_SHEET.label}
               </a>
-              {pr.blogPost.notes ? ` · ${pr.blogPost.notes}` : ""}
-            </>
-          }
-        />
-        <AssetLine
-          on={pr.pressRelease.enabled}
-          title="Press Release – By SPM"
-          detail={
-            pr.pressRelease.notes
-              ? `${PR_PRESS_RELEASE_SUBTITLE} · ${pr.pressRelease.notes}`
-              : PR_PRESS_RELEASE_SUBTITLE
-          }
-        />
-        {(Array.isArray(pr.custom) ? pr.custom : []).map((a) => (
-          <AssetLine
-            key={a.id}
-            on={a.enabled}
-            title={a.title || "Untitled PR item"}
-            detail={
-              [a.specs, a.notes].filter((p) => p && String(p).trim()).join(" · ") ||
-              undefined
-            }
-          />
-        ))}
+            </p>
+            {pm.map((a) => (
+              <AssetLine
+                key={a.id}
+                on
+                title={a.title || "Untitled"}
+                detail={formatPaidMediaDetail(a) || undefined}
+              />
+            ))}
+          </>
+        )}
 
-        {/* Physical */}
-        <SectionTitle>Physical / In-Store Assets</SectionTitle>
-        <div className="grid grid-cols-1 gap-0.5">
-          {(Array.isArray(brief.physicalAssets)
-            ? brief.physicalAssets
-            : []
-          ).map((a) => (
-            <AssetLine
-              key={a.id}
-              on={a.enabled}
-              title={a.label || "Untitled"}
-              detail={
-                [a.specs, a.notes]
-                  .filter((p) => p && String(p).trim())
-                  .join(" · ") || undefined
-              }
-            />
-          ))}
-        </div>
+        {/* PR — only when at least one item is checked */}
+        {showPr && (
+          <>
+            <SectionTitle>PR</SectionTitle>
+            {pr.blogPost.enabled && (
+              <AssetLine
+                on
+                title="Blog Post – Campero Website"
+                detail={
+                  <>
+                    <a
+                      href={PR_BLOG_SPECS_LINK.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-campero-orange underline font-semibold"
+                    >
+                      {PR_BLOG_SPECS_LINK.label}
+                    </a>
+                    {pr.blogPost.notes ? ` · ${pr.blogPost.notes}` : ""}
+                  </>
+                }
+              />
+            )}
+            {pr.pressRelease.enabled && (
+              <AssetLine
+                on
+                title="Press Release – By SPM"
+                detail={
+                  pr.pressRelease.notes
+                    ? `${PR_PRESS_RELEASE_SUBTITLE} · ${pr.pressRelease.notes}`
+                    : PR_PRESS_RELEASE_SUBTITLE
+                }
+              />
+            )}
+            {prCustom.map((a) => (
+              <AssetLine
+                key={a.id}
+                on
+                title={a.title || "Untitled PR item"}
+                detail={
+                  [a.specs, a.notes]
+                    .filter((p) => p && String(p).trim())
+                    .join(" · ") || undefined
+                }
+              />
+            ))}
+          </>
+        )}
+
+        {/* Physical / In-Store — only when at least one asset is checked */}
+        {physical.length > 0 && (
+          <>
+            <SectionTitle>Physical / In-Store Assets</SectionTitle>
+            <div className="grid grid-cols-1 gap-0.5">
+              {physical.map((a) => (
+                <AssetLine
+                  key={a.id}
+                  on
+                  title={a.label || "Untitled"}
+                  detail={
+                    [a.specs, a.notes]
+                      .filter((p) => p && String(p).trim())
+                      .join(" · ") || undefined
+                  }
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Legal */}
         <SectionTitle>Legal</SectionTitle>
         <p className="text-[11px] leading-relaxed text-stone-700 whitespace-pre-wrap border border-stone-200 rounded-md p-3 bg-stone-50">
           {brief.legal.legalText}
         </p>
-        <p className="mt-3 text-[10px] text-stone-500">{copyright}</p>
+        <p className="mt-3 text-[11px]">
+          <a
+            href={BRAND_GUIDELINES_PATH}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-campero-orange underline"
+          >
+            Brand guidelines
+          </a>
+          <span className="text-stone-500">
+            {" "}
+            — product naming, logo, drinks, and other fixed brand rules
+          </span>
+        </p>
       </div>
 
       <footer className="px-8 py-3 bg-stone-50 border-t border-stone-100 text-[10px] text-stone-400 flex justify-between">

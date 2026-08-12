@@ -151,17 +151,6 @@ export function ITElements() {
         </div>
       </div>
 
-      {canAdmin && (
-        <p className="text-xs text-violet-900 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
-          <strong>Admin:</strong> add or edit global IT assets (name, subtitle,
-          description hint, and pre-filled text) under{" "}
-          <Link href="/admin/it/" className="font-semibold underline">
-            Manage IT assets
-          </Link>
-          . Those changes apply for everyone on new selections.
-        </p>
-      )}
-
       <div className="space-y-3">
         {assets.length === 0 && (
           <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">

@@ -1,8 +1,18 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { AdminGate } from "@/components/auth/AdminGate";
+import {
+  AdminEmptyState,
+  AdminFlash,
+  AdminHeader,
+  AdminInactiveBadge,
+  AdminItemActions,
+  AdminListTile,
+  AdminMain,
+  AdminPageShell,
+  AdminSectionHeader,
+} from "@/components/admin/AdminUi";
 import {
   createLegalTemplate,
   deleteLegalTemplate,
@@ -10,7 +20,7 @@ import {
   updateLegalTemplate,
   type LegalTemplateRow,
 } from "@/lib/supabase/legalTemplatesApi";
-import { FileText, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
+import { FileText, Save, X } from "lucide-react";
 
 function emptyForm() {
   return {
@@ -153,90 +163,28 @@ function LegalAdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBF7] text-stone-900">
-      <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">
-                Manage all templates
-              </h1>
-              <p className="text-xs text-stone-500">
-                Shared legal library · Legal tab chips for every user
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add template for everyone
-            </button>
-            <Link
-              href="/admin/it/"
-              className="inline-flex items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              IT / OLO
-            </Link>
-            <Link
-              href="/admin/"
-              className="inline-flex items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              Users
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white hover:bg-campero-orange-dark"
-            >
-              Brief builder
-            </Link>
-          </div>
-        </div>
-      </header>
+    <AdminPageShell>
+      <AdminHeader
+        title="Manage all templates"
+        subtitle="Shared legal library · Legal tab chips for every user"
+        onRefresh={() => void load()}
+        icon={FileText}
+      />
 
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
-        <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5 shadow-sm text-sm text-violet-950">
-          <p className="font-semibold">Shared library for everyone</p>
-          <p className="mt-1 text-violet-900/90">
-            <strong>Add template for everyone</strong> creates a new Legal chip
-            for all users. Open a template and use{" "}
-            <strong>Save for everyone</strong> to update the shared library. To
-            change legal text on a single promo only, use{" "}
-            <strong>Edit for this brief only</strong> on the Legal tab.
-          </p>
-        </section>
-
-        {message && (
-          <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-            {message}
-          </p>
-        )}
-        {error && (
-          <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 whitespace-pre-wrap">
-            {error}
-            {(error.includes("relation") ||
-              error.includes("does not exist")) && (
+      <AdminMain>
+        <AdminFlash
+          message={message}
+          error={error}
+          sqlHint={
+            error &&
+            (error.includes("relation") || error.includes("does not exist")) ? (
               <span className="block mt-2 text-xs">
                 Run <code>supabase/legal-templates.sql</code> in the Supabase
                 SQL Editor first.
               </span>
-            )}
-          </p>
-        )}
+            ) : null
+          }
+        />
 
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
@@ -378,77 +326,57 @@ function LegalAdminPanel() {
           </div>
         )}
 
-        <section className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-stone-100 px-5 py-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold">Templates ({rows.length})</h2>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[11px] font-bold text-violet-900 hover:bg-violet-100"
-            >
-              <Plus className="h-3 w-3" />
-              Add template for everyone
-            </button>
+        <div className="space-y-3">
+          <AdminSectionHeader
+            title="Templates"
+            count={rows.length}
+            loading={loading}
+            onAdd={openCreate}
+          />
+          <div className="space-y-3">
+            {loading ? (
+              <AdminEmptyState>Loading…</AdminEmptyState>
+            ) : rows.length === 0 ? (
+              <AdminEmptyState>
+                No rows yet. Run <code>legal-templates.sql</code> or click{" "}
+                <strong>Add for everyone</strong>.
+              </AdminEmptyState>
+            ) : (
+              rows.map((row) => (
+                <AdminListTile
+                  key={row.id}
+                  active={row.is_active}
+                  title={
+                    <>
+                      {row.label}
+                      {!row.is_active && <AdminInactiveBadge />}
+                    </>
+                  }
+                  actions={
+                    <AdminItemActions
+                      busy={busy}
+                      onEdit={() => openEdit(row)}
+                      onDelete={() => void onDelete(row)}
+                    />
+                  }
+                >
+                  {row.description?.trim() && (
+                    <p className="block text-xs text-stone-500 mt-0.5">
+                      {row.description}
+                    </p>
+                  )}
+                  {row.body?.trim() && (
+                    <p className="mt-2 text-xs text-stone-600 line-clamp-2 whitespace-pre-wrap">
+                      {row.body}
+                    </p>
+                  )}
+                </AdminListTile>
+              ))
+            )}
           </div>
-          {loading ? (
-            <p className="p-8 text-center text-sm text-stone-400">Loading…</p>
-          ) : rows.length === 0 ? (
-            <p className="p-8 text-center text-sm text-stone-400">
-              No rows yet. Run <code>legal-templates.sql</code> or click{" "}
-              <strong>Add template for everyone</strong>.
-            </p>
-          ) : (
-            <ul className="divide-y divide-stone-100">
-              {rows.map((row) => (
-                <li key={row.id} className="px-5 py-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-stone-900">
-                          {row.label}
-                        </span>
-                        {!row.is_active && (
-                          <span className="text-[10px] font-bold uppercase text-stone-400">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      {row.description && (
-                        <p className="text-xs text-stone-500 mt-0.5">
-                          {row.description}
-                        </p>
-                      )}
-                      <p className="mt-2 text-xs text-stone-600 line-clamp-2 font-serif">
-                        {row.body}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(row)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-bold text-violet-900 hover:bg-violet-100"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void onDelete(row)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Delete for everyone
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
-    </div>
+        </div>
+      </AdminMain>
+    </AdminPageShell>
   );
 }
 

@@ -1,3 +1,6 @@
+/** Public path for shareable brand guidelines (no login required). */
+export const BRAND_GUIDELINES_PATH = "/brand-guidelines";
+
 export const BRAND_GUIDELINES = {
   productNaming: [
     "Use “Roasted Chicken” (not “rotisserie” or generic “chicken” alone when referring to the hero product).",

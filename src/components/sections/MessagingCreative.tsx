@@ -7,7 +7,6 @@ import {
   FieldLabel,
   TextInput,
   TextArea,
-  DynamicList,
 } from "@/components/ui/FormControls";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -58,14 +57,14 @@ export function MessagingCreative() {
       title="Messaging & Creative Direction"
     >
       <div>
-        <FieldLabel hint="Add or remove lines as needed">
-          Messaging bullets
-        </FieldLabel>
-        <DynamicList
-          items={brief.messagingBullets}
-          onChange={(items) => patch("messagingBullets", items)}
-          placeholder="Key message or talking point…"
-          addLabel="Add messaging line"
+        <FieldLabel htmlFor="messagingBullets">Messaging</FieldLabel>
+        <TextArea
+          id="messagingBullets"
+          value={brief.messagingBullets}
+          onChange={(e) => patch("messagingBullets", e.target.value)}
+          placeholder="Key messages, talking points, or campaign messaging…"
+          className="min-h-[140px]"
+          rows={5}
         />
       </div>
 
@@ -84,9 +83,7 @@ export function MessagingCreative() {
       </div>
 
       <div>
-        <FieldLabel hint="Name the asset and paste a drive/DAM/share link if available">
-          Photography/Asset References
-        </FieldLabel>
+        <FieldLabel>Photography/Asset References</FieldLabel>
         <div className="space-y-2">
           {refs.map((ref, index) => (
             <div

@@ -86,7 +86,7 @@ export function ReviewGenerate() {
     { ok: !!brief.launchDate, label: "Launch date" },
     { ok: !!brief.locations, label: "Locations" },
     {
-      ok: brief.messagingBullets.some((b) => b.text.trim()),
+      ok: !!brief.messagingBullets.trim(),
       label: "Messaging",
     },
     { ok: !!brief.legal.legalText.trim(), label: "Legal language" },

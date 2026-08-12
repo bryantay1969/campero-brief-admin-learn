@@ -1,6 +1,6 @@
 import type { PromoBrief } from "./types";
 import { formatDateRange, formatPhotoRefs } from "./utils";
-import { getCopyrightLine } from "./legalTemplates";
+import { BRAND_GUIDELINES_PATH } from "./brandGuidelines";
 import { formatDigitalAssetDetail } from "./digitalAssets";
 import { formatITAssetDetail, IT_PROJECT_OWNER_NOTE } from "./itElements";
 import { formatPaidMediaDetail, PAID_MEDIA_SPEC_SHEET } from "./paidMedia";
@@ -11,7 +11,7 @@ import {
 
 /**
  * Professional multi-page PDF built with jsPDF text/drawing APIs.
- * Avoids html2canvas (which fails on Tailwind v4 lab()/oklch() colors).
+ * Layout mirrors the web BriefPreview (header, labeled rows, checkbox lists).
  */
 export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
   const { jsPDF } = await import("jspdf");
@@ -28,8 +28,10 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
   const marginTop = 48;
   const marginBottom = 52;
   const contentWidth = pageWidth - marginX * 2;
-  const labelWidth = 118;
-  const valueWidth = contentWidth - labelWidth - 8;
+  /** Match web preview ~140px label column at letter scale */
+  const labelWidth = 120;
+  const valueGap = 10;
+  const valueWidth = contentWidth - labelWidth - valueGap;
 
   // Brand palette (hex only — fully supported)
   const orange: [number, number, number] = [232, 93, 4];
@@ -39,6 +41,8 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
   const muted: [number, number, number] = [120, 113, 108];
   const lightLine: [number, number, number] = [231, 229, 228];
   const softBg: [number, number, number] = [250, 250, 249];
+  const stoneBorder: [number, number, number] = [214, 211, 209];
+  const mutedText: [number, number, number] = [168, 162, 158];
 
   let y = marginTop;
   let pageNum = 1;
@@ -70,7 +74,7 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
     pdf.setFontSize(9);
     pdf.setTextColor(...muted);
     pdf.text(
-      `${brief.promoName || "Promo Brief"} (continued)`,
+      `${brief.promoName.trim() || "Promo Brief"} (continued)`,
       marginX,
       28
     );
@@ -82,226 +86,278 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
 
   const textOrDash = (v?: string) => (v && v.trim() ? v.trim() : "—");
 
-  // ——— Header banner ———
+  /**
+   * Checkbox matching web preview: square with border;
+   * filled orange + white check when on.
+   * `top` is the top edge of the box (not text baseline).
+   */
+  const drawCheckbox = (left: number, top: number, on: boolean, size = 10) => {
+    const r = 1.5;
+    if (on) {
+      pdf.setFillColor(...orange);
+      pdf.setDrawColor(...orange);
+      pdf.setLineWidth(0.6);
+      pdf.roundedRect(left, top, size, size, r, r, "FD");
+
+      // White checkmark (two strokes)
+      pdf.setDrawColor(255, 255, 255);
+      pdf.setLineWidth(1.5);
+      pdf.setLineCap("round");
+      pdf.setLineJoin("round");
+      const x1 = left + size * 0.22;
+      const y1 = top + size * 0.52;
+      const x2 = left + size * 0.42;
+      const y2 = top + size * 0.7;
+      const x3 = left + size * 0.78;
+      const y3 = top + size * 0.28;
+      pdf.line(x1, y1, x2, y2);
+      pdf.line(x2, y2, x3, y3);
+    } else {
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(...stoneBorder);
+      pdf.setLineWidth(0.9);
+      pdf.roundedRect(left, top, size, size, r, r, "FD");
+    }
+  };
+
+  // ——— Header banner (matches web preview gradient band) ———
+  const headerH = 92;
   pdf.setFillColor(...orange);
-  pdf.rect(0, 0, pageWidth, 92, "F");
-  // subtle right accent
+  pdf.rect(0, 0, pageWidth, headerH, "F");
   pdf.setFillColor(...amber);
-  pdf.rect(pageWidth * 0.55, 0, pageWidth * 0.25, 92, "F");
+  pdf.rect(pageWidth * 0.55, 0, pageWidth * 0.25, headerH, "F");
   pdf.setFillColor(...yellow);
-  pdf.rect(pageWidth * 0.8, 0, pageWidth * 0.2, 92, "F");
+  pdf.rect(pageWidth * 0.8, 0, pageWidth * 0.2, headerH, "F");
 
   pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(9);
   pdf.text("POLLO CAMPERO  ·  MARKETING", marginX, 28);
   pdf.setFontSize(22);
-  pdf.text("Promo Checklist Brief", marginX, 52);
+  pdf.text(brief.promoName.trim() || "Untitled Promo", marginX, 52);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(12);
-  pdf.text(brief.promoName || "Untitled Promo", marginX, 72);
+  pdf.text("Promo Checklist Brief", marginX, 72);
 
-  y = 112;
+  y = headerH + 20;
 
   // ——— Helpers ———
+  const FONT = 9;
+  const LINE_H = 12;
+  const ROW_PAD_Y = 5;
+
   const sectionTitle = (title: string) => {
     ensureSpace(36);
-    y += 6;
+    y += 10;
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(10);
     pdf.setTextColor(...orange);
     pdf.text(title.toUpperCase(), marginX, y);
-    y += 4;
+    y += 5;
     pdf.setDrawColor(...orange);
     pdf.setLineWidth(1.2);
-    pdf.line(marginX, y, marginX + contentWidth, y);
-    y += 14;
+    // Softer full-width rule under section (like web border-b-2)
+    pdf.setDrawColor(232, 93, 4);
+    pdf.setLineWidth(1.5);
+    const ruleW = Math.min(contentWidth, 220);
+    pdf.line(marginX, y, marginX + ruleW, y);
+    // light remainder of line
+    pdf.setDrawColor(254, 215, 170); // orange-200-ish
+    pdf.setLineWidth(1);
+    pdf.line(marginX + ruleW, y, marginX + contentWidth, y);
+    y += 12;
   };
 
+  /**
+   * Label | value row with a clean full-width hairline under the whole block.
+   * Line is drawn only after text is placed so it never overlaps copy.
+   */
   const row = (label: string, value: string) => {
-    const lines = pdf.splitTextToSize(textOrDash(value), valueWidth) as string[];
-    const blockH = Math.max(14, lines.length * 12 + 4);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(FONT);
+    const lines = pdf.splitTextToSize(
+      textOrDash(value),
+      valueWidth
+    ) as string[];
+    const textBlockH = Math.max(LINE_H, lines.length * LINE_H);
+    const blockH = ROW_PAD_Y + textBlockH + ROW_PAD_Y;
+
     ensureSpace(blockH + 2);
 
+    // First line baseline: top padding + ~0.75 of font size for cap height
+    const baseline = y + ROW_PAD_Y + FONT * 0.85;
+
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9);
+    pdf.setFontSize(FONT);
     pdf.setTextColor(...muted);
-    pdf.text(label, marginX, y);
+    pdf.text(label, marginX, baseline);
 
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(...dark);
-    pdf.text(lines, marginX + labelWidth, y);
+    let lineBaseline = baseline;
+    for (const line of lines) {
+      pdf.text(line, marginX + labelWidth + valueGap, lineBaseline);
+      lineBaseline += LINE_H;
+    }
 
+    // Advance past text + padding, then draw separator under the block
     y += blockH;
     pdf.setDrawColor(...lightLine);
-    pdf.setLineWidth(0.4);
-    pdf.line(marginX, y - 4, marginX + contentWidth, y - 4);
+    pdf.setLineWidth(0.5);
+    pdf.line(marginX, y, marginX + contentWidth, y);
   };
 
+  /**
+   * Checklist row: drawn checkbox + title (+ optional detail), web-preview style.
+   */
   const checkLine = (on: boolean, title: string, detail?: string) => {
-    const mark = on ? "[x]" : "[ ]";
+    const box = 10;
+    const boxGap = 8;
+    const textLeft = marginX + box + boxGap;
+    const textW = contentWidth - box - boxGap;
     const full = detail ? `${title} — ${detail}` : title;
-    const lines = pdf.splitTextToSize(full, contentWidth - 28) as string[];
-    const blockH = Math.max(14, lines.length * 11 + 2);
-    ensureSpace(blockH);
-
-    const checkColor: [number, number, number] = on
-      ? dark
-      : muted;
-    const textColor: [number, number, number] = on
-      ? dark
-      : [168, 162, 158];
-
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9);
-    pdf.setTextColor(checkColor[0], checkColor[1], checkColor[2]);
-    pdf.text(mark, marginX, y);
 
     pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(FONT);
+    const lines = pdf.splitTextToSize(full, textW) as string[];
+    const padY = 3;
+    const textBlockH = Math.max(box, lines.length * LINE_H);
+    const blockH = padY + textBlockH + padY;
+
+    ensureSpace(blockH);
+
+    drawCheckbox(marginX, y + padY + 1, on, box);
+
+    const textColor: [number, number, number] = on ? dark : mutedText;
     pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-    pdf.text(lines, marginX + 24, y);
+    pdf.setFontSize(FONT);
+
+    let lineBaseline = y + padY + FONT * 0.85;
+    lines.forEach((line, i) => {
+      // First line bold (asset name), continuation normal — mirrors web weight
+      pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
+      pdf.text(line, textLeft, lineBaseline);
+      lineBaseline += LINE_H;
+    });
+
     y += blockH;
   };
 
-  const bulletList = (items: string[]) => {
-    const cleaned = items.map((t) => t.trim()).filter(Boolean);
-    if (cleaned.length === 0) {
-      row("Messaging", "None");
-      return;
-    }
-    ensureSpace(18);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9);
-    pdf.setTextColor(...muted);
-    pdf.text("Messaging", marginX, y);
-    y += 12;
-
-    cleaned.forEach((item) => {
-      const lines = pdf.splitTextToSize(`•  ${item}`, contentWidth - 8) as string[];
-      ensureSpace(lines.length * 12 + 2);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(...dark);
-      pdf.setFontSize(9);
-      pdf.text(lines, marginX + 4, y);
-      y += lines.length * 12 + 2;
-    });
-    pdf.setDrawColor(...lightLine);
-    pdf.setLineWidth(0.4);
-    pdf.line(marginX, y, marginX + contentWidth, y);
-    y += 8;
-  };
-
-  // ——— Content ———
+  // ——— Content (match web preview: only checked assets / hide empty sections) ———
   const dateRange = formatDateRange(brief.launchDate, brief.endDate);
 
-  const digital = brief.digitalAssets;
-  const it = Array.isArray(brief.itElements) ? brief.itElements : [];
-  const pm = Array.isArray(brief.paidMedia) ? brief.paidMedia : [];
+  const digital = (brief.digitalAssets || []).filter((a) => a.enabled);
+  const it = (Array.isArray(brief.itElements) ? brief.itElements : []).filter(
+    (a) => a.enabled
+  );
+  const pm = (Array.isArray(brief.paidMedia) ? brief.paidMedia : []).filter(
+    (a) => a.enabled
+  );
   const pr = brief.pr;
+  const prCustom = (Array.isArray(pr.custom) ? pr.custom : []).filter(
+    (a) => a.enabled
+  );
+  const showPr =
+    pr.blogPost.enabled || pr.pressRelease.enabled || prCustom.length > 0;
+  const physical = (
+    Array.isArray(brief.physicalAssets) ? brief.physicalAssets : []
+  ).filter((a) => a.enabled);
 
   sectionTitle("Promo Overview");
   row("Project Lead", brief.projectLead);
   row("Promo Name", brief.promoName);
   row("Dates", dateRange);
-  row("Quick Note", brief.quickNote);
+  row("Project Description", brief.quickNote);
   row("Loyalty only", yesNo(brief.loyaltyOnly));
   row("Promo code", yesNo(brief.promoCodeNeeded));
   row("Locations", brief.locations);
 
   sectionTitle("Messaging & Creative Direction");
-  bulletList(brief.messagingBullets.map((b) => b.text));
+  row("Messaging", brief.messagingBullets);
   row("Creative notes", brief.creativeNotes);
   row("Photo/asset refs", formatPhotoRefs(brief.foodPhotoReferences));
 
-  sectionTitle("Digital Assets");
-  if (digital.length === 0) {
-    checkLine(false, "None listed");
-  } else {
+  if (digital.length > 0) {
+    sectionTitle("Digital Assets");
     digital.forEach((a) => {
       const detail = formatDigitalAssetDetail(a);
-      checkLine(a.enabled, a.title || "Untitled", detail || undefined);
+      checkLine(true, a.title || "Untitled", detail || undefined);
     });
   }
 
-  sectionTitle("IT / Online Ordering");
-  if (it.length === 0) {
-    checkLine(false, "None listed");
-  } else {
+  if (it.length > 0) {
+    sectionTitle("IT / Online Ordering");
     it.forEach((a) => {
       const detail = formatITAssetDetail(a);
-      checkLine(a.enabled, a.title || "Untitled", detail || undefined);
+      checkLine(true, a.title || "Untitled", detail || undefined);
     });
-  }
-  ensureSpace(28);
-  pdf.setFont("helvetica", "italic");
-  pdf.setFontSize(8);
-  pdf.setTextColor(...muted);
-  const noteLines = pdf.splitTextToSize(
-    IT_PROJECT_OWNER_NOTE,
-    contentWidth
-  ) as string[];
-  pdf.text(noteLines, marginX, y);
-  y += noteLines.length * 11 + 6;
-
-  sectionTitle("Paid Media");
-  ensureSpace(20);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
-  pdf.setTextColor(...orange);
-  pdf.textWithLink(PAID_MEDIA_SPEC_SHEET.label, marginX, y, {
-    url: PAID_MEDIA_SPEC_SHEET.href,
-  });
-  y += 14;
-  if (pm.length === 0) {
-    checkLine(false, "None listed");
-  } else {
-    pm.forEach((a) => {
-      const detail = formatPaidMediaDetail(a);
-      checkLine(a.enabled, a.title || "Untitled", detail || undefined);
-    });
+    ensureSpace(28);
+    pdf.setFont("helvetica", "italic");
+    pdf.setFontSize(8);
+    pdf.setTextColor(...muted);
+    const noteLines = pdf.splitTextToSize(
+      IT_PROJECT_OWNER_NOTE,
+      contentWidth
+    ) as string[];
+    pdf.text(noteLines, marginX, y + 8);
+    y += noteLines.length * 11 + 10;
   }
 
-  sectionTitle("PR");
-  checkLine(
-    pr.blogPost.enabled,
-    "Blog Post – Campero Website",
-    `${PR_BLOG_SPECS_LINK.label}${pr.blogPost.notes ? ` · ${pr.blogPost.notes}` : ""}`
-  );
-  if (pr.blogPost.enabled) {
-    ensureSpace(14);
+  if (pm.length > 0) {
+    sectionTitle("Paid Media");
+    ensureSpace(20);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8);
     pdf.setTextColor(...orange);
-    pdf.textWithLink(PR_BLOG_SPECS_LINK.label, marginX + 24, y, {
-      url: PR_BLOG_SPECS_LINK.href,
+    pdf.textWithLink(PAID_MEDIA_SPEC_SHEET.label, marginX, y + 8, {
+      url: PAID_MEDIA_SPEC_SHEET.href,
     });
-    y += 12;
+    y += 16;
+    pm.forEach((a) => {
+      const detail = formatPaidMediaDetail(a);
+      checkLine(true, a.title || "Untitled", detail || undefined);
+    });
   }
-  checkLine(
-    pr.pressRelease.enabled,
-    "Press Release – By SPM",
-    `${PR_PRESS_RELEASE_SUBTITLE}${pr.pressRelease.notes ? ` · ${pr.pressRelease.notes}` : ""}`
-  );
-  const prCustom = Array.isArray(pr.custom) ? pr.custom : [];
-  prCustom.forEach((a) => {
-    checkLine(
-      a.enabled,
-      a.title || "Untitled PR item",
-      [a.specs, a.notes].filter((p) => p && String(p).trim()).join(" · ") ||
-        undefined
-    );
-  });
 
-  sectionTitle("Physical / In-Store Assets");
-  const physical = Array.isArray(brief.physicalAssets)
-    ? brief.physicalAssets
-    : [];
-  if (physical.length === 0) {
-    checkLine(false, "None listed");
-  } else {
+  if (showPr) {
+    sectionTitle("PR");
+    if (pr.blogPost.enabled) {
+      checkLine(
+        true,
+        "Blog Post – Campero Website",
+        `${PR_BLOG_SPECS_LINK.label}${pr.blogPost.notes ? ` · ${pr.blogPost.notes}` : ""}`
+      );
+      ensureSpace(14);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(...orange);
+      pdf.textWithLink(PR_BLOG_SPECS_LINK.label, marginX + 18, y + 6, {
+        url: PR_BLOG_SPECS_LINK.href,
+      });
+      y += 14;
+    }
+    if (pr.pressRelease.enabled) {
+      checkLine(
+        true,
+        "Press Release – By SPM",
+        `${PR_PRESS_RELEASE_SUBTITLE}${pr.pressRelease.notes ? ` · ${pr.pressRelease.notes}` : ""}`
+      );
+    }
+    prCustom.forEach((a) => {
+      checkLine(
+        true,
+        a.title || "Untitled PR item",
+        [a.specs, a.notes].filter((p) => p && String(p).trim()).join(" · ") ||
+          undefined
+      );
+    });
+  }
+
+  if (physical.length > 0) {
+    sectionTitle("Physical / In-Store Assets");
     physical.forEach((a) => {
       checkLine(
-        a.enabled,
+        true,
         a.label || "Untitled",
         [a.specs, a.notes].filter((p) => p && String(p).trim()).join(" · ") ||
           undefined
@@ -311,35 +367,53 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
 
   sectionTitle("Legal");
   ensureSpace(40);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(8.5);
   const legalLines = pdf.splitTextToSize(
     textOrDash(brief.legal.legalText),
     contentWidth - 16
   ) as string[];
-  const legalBoxH = legalLines.length * 11 + 20;
+  const legalPad = 10;
+  const legalLineH = 11;
+  const legalBoxH = legalPad * 2 + legalLines.length * legalLineH;
   ensureSpace(legalBoxH + 30);
 
+  const boxTop = y;
   pdf.setFillColor(...softBg);
   pdf.setDrawColor(...lightLine);
   pdf.setLineWidth(0.6);
-  pdf.roundedRect(marginX, y - 8, contentWidth, legalBoxH, 4, 4, "FD");
+  pdf.roundedRect(marginX, boxTop, contentWidth, legalBoxH, 4, 4, "FD");
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8.5);
   pdf.setTextColor(...dark);
-  pdf.text(legalLines, marginX + 8, y + 6);
-  y += legalBoxH + 12;
+  let legalY = boxTop + legalPad + 8;
+  for (const line of legalLines) {
+    pdf.text(line, marginX + 8, legalY);
+    legalY += legalLineH;
+  }
+  y = boxTop + legalBoxH + 12;
 
-  const copyright = getCopyrightLine(
-    brief.legal.copyrightVariant,
-    brief.legal.copyrightYear
-  );
-  ensureSpace(24);
+  // Brand guidelines link (absolute URL so PDF opens correctly)
+  const brandGuidelinesUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${BRAND_GUIDELINES_PATH}`
+      : BRAND_GUIDELINES_PATH;
+
+  ensureSpace(28);
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
+  pdf.setTextColor(...orange);
+  pdf.textWithLink("Brand guidelines", marginX, y + 8, {
+    url: brandGuidelinesUrl,
+  });
+  const linkW = pdf.getTextWidth("Brand guidelines");
   pdf.setTextColor(...muted);
-  const copyLines = pdf.splitTextToSize(copyright, contentWidth) as string[];
-  pdf.text(copyLines, marginX, y);
-  y += copyLines.length * 11 + 8;
+  pdf.setFontSize(8);
+  pdf.text(
+    " — product naming, logo, drinks, and other fixed brand rules",
+    marginX + linkW + 2,
+    y + 8
+  );
+  y += 18;
 
   ensureSpace(16);
   pdf.setFontSize(8);
@@ -351,7 +425,7 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
       year: "numeric",
     })}`,
     marginX,
-    y
+    y + 8
   );
 
   drawFooter();
