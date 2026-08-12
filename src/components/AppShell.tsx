@@ -66,14 +66,14 @@ export function AppShell() {
   const formInstanceId = useBriefStore((s) => s.formInstanceId);
   const { isViewer } = useAuth();
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Always closed on load (login, refresh, new tab). Open only for this session.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
+    // Drop any old “left open” preference so login never restores an open menu
     try {
-      const raw = localStorage.getItem(SIDEBAR_KEY);
-      if (raw === "0") setSidebarOpen(false);
-      if (raw === "1") setSidebarOpen(true);
+      localStorage.removeItem(SIDEBAR_KEY);
     } catch {
       // ignore
     }
@@ -81,11 +81,6 @@ export function AppShell() {
 
   const setSidebar = (open: boolean) => {
     setSidebarOpen(open);
-    try {
-      localStorage.setItem(SIDEBAR_KEY, open ? "1" : "0");
-    } catch {
-      // ignore
-    }
   };
 
   useEffect(() => {
