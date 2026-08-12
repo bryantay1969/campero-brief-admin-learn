@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LoginPage() {
-  const { signIn, signUp, configured, user } = useAuth();
+  const { signIn, configured, user } = useAuth();
   const router = useRouter();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -21,23 +19,11 @@ export default function LoginPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setInfo(null);
     setBusy(true);
     try {
-      if (mode === "signin") {
-        const err = await signIn(email.trim(), password);
-        if (err) setError(err);
-        else router.push("/");
-      } else {
-        const err = await signUp(email.trim(), password);
-        if (err) setError(err);
-        else {
-          setInfo(
-            "Account created. If email confirmation is on, check your inbox. Otherwise you can sign in now."
-          );
-          setMode("signin");
-        }
-      }
+      const err = await signIn(email.trim(), password);
+      if (err) setError(err);
+      else router.push("/");
     } finally {
       setBusy(false);
     }
@@ -51,11 +37,9 @@ export default function LoginPage() {
             PC
           </div>
           <div>
-            <h1 className="text-lg font-bold text-stone-900">
-              {mode === "signin" ? "Log in" : "Create account"}
-            </h1>
+            <h1 className="text-lg font-bold text-stone-900">Log in</h1>
             <p className="text-xs text-stone-500">
-              Shared briefs library (learning / admin)
+              Sign in with the account your admin provided
             </p>
           </div>
         </div>
@@ -90,9 +74,7 @@ export default function LoginPage() {
               type="password"
               required
               minLength={6}
-              autoComplete={
-                mode === "signin" ? "current-password" : "new-password"
-              }
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-stone-200 px-3 py-2.5 text-sm focus:border-campero-orange focus:outline-none focus:ring-2 focus:ring-campero-orange/20"
@@ -104,41 +86,19 @@ export default function LoginPage() {
               {error}
             </p>
           )}
-          {info && (
-            <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-              {info}
-            </p>
-          )}
 
           <button
             type="submit"
             disabled={busy || !configured}
             className="w-full rounded-xl bg-campero-orange py-3 text-sm font-bold text-white shadow-md shadow-orange-200 hover:bg-campero-orange-dark disabled:opacity-50"
           >
-            {busy
-              ? "Please wait…"
-              : mode === "signin"
-                ? "Log in"
-                : "Sign up"}
+            {busy ? "Please wait…" : "Log in"}
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === "signin" ? "signup" : "signin");
-            setError(null);
-            setInfo(null);
-          }}
-          className="mt-4 w-full text-center text-sm font-medium text-campero-orange hover:underline"
-        >
-          {mode === "signin"
-            ? "Need an account? Sign up"
-            : "Already have an account? Log in"}
-        </button>
-
         <p className="mt-6 text-center text-xs text-stone-400">
-          You must log in to use the brief builder.
+          Accounts are created by an admin under Manage users. You must log in
+          to use the brief builder.
         </p>
       </div>
     </div>

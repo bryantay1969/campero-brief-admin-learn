@@ -113,24 +113,28 @@ export function AdminSectionHeader({
   addLabel = "Add for everyone",
 }: {
   title: string;
-  count: number;
+  /** Omit to hide the count (e.g. Roles). */
+  count?: number;
   loading?: boolean;
-  onAdd: () => void;
+  onAdd?: () => void;
   addLabel?: string;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="font-bold text-sm text-stone-900">
-        {title} ({loading ? "…" : count})
+        {title}
+        {count !== undefined && ` (${loading ? "…" : count})`}
       </h2>
-      <button
-        type="button"
-        onClick={onAdd}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {addLabel}
-      </button>
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-800"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {addLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -197,11 +201,14 @@ export function AdminItemActions({
   onEdit,
   onDelete,
   busy,
+  deleteDisabled,
   deleteLabel = "Delete",
 }: {
   onEdit: () => void;
   onDelete: () => void;
   busy?: boolean;
+  /** Extra lock (e.g. cannot delete your own account). */
+  deleteDisabled?: boolean;
   deleteLabel?: string;
 }) {
   return (
@@ -209,14 +216,15 @@ export function AdminItemActions({
       <button
         type="button"
         onClick={onEdit}
-        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-bold text-violet-900 hover:bg-violet-100"
+        disabled={busy}
+        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] font-bold text-violet-900 hover:bg-violet-100 disabled:opacity-40"
       >
         <Pencil className="h-3 w-3" />
         Edit
       </button>
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || deleteDisabled}
         onClick={onDelete}
         className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
       >

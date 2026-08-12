@@ -1,8 +1,19 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { AdminGate } from "@/components/auth/AdminGate";
+import {
+  AdminEmptyState,
+  AdminFlash,
+  AdminHeader,
+  AdminItemActions,
+  AdminListTile,
+  AdminMain,
+  AdminPageShell,
+  AdminSectionHeader,
+  adminFieldClass,
+  adminLabelClass,
+} from "@/components/admin/AdminUi";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { ProfileRow, UserRole } from "@/lib/supabase/adminApi";
 import {
@@ -12,7 +23,7 @@ import {
   apiUpdateUser,
 } from "@/lib/supabase/adminClientApi";
 import { format } from "date-fns";
-import { Pencil, Plus, RefreshCw, Shield, Trash2, X } from "lucide-react";
+import { Shield, X } from "lucide-react";
 
 const ROLES: UserRole[] = ["admin", "editor", "viewer"];
 
@@ -175,136 +186,56 @@ function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBF7] text-stone-900">
-      <header className="border-b border-orange-100 bg-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E85D04] to-[#FFBA08] text-white">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">Admin</h1>
-              <p className="text-xs text-stone-500">
-                Add, edit, and delete users · manage roles
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void load()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowCreate(true);
-                setError(null);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-100"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add user
-            </button>
-            <Link
-              href="/"
-              className="inline-flex items-center rounded-lg bg-campero-orange px-3 py-2 text-xs font-bold text-white hover:bg-campero-orange-dark"
-            >
-              Back to brief
-            </Link>
-          </div>
+    <AdminPageShell>
+      <AdminHeader
+        title="Manage users"
+        subtitle="Add, edit, and delete users · manage roles"
+        onRefresh={() => void load()}
+        icon={Shield}
+      />
+
+      <AdminMain>
+        <div className="space-y-3">
+          <AdminSectionHeader
+            title="Roles"
+            addLabel="Add user"
+            onAdd={() => {
+              setShowCreate(true);
+              setError(null);
+            }}
+          />
+          <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <ul className="text-sm text-stone-600 space-y-1 list-disc pl-5">
+              <li>
+                <strong>admin</strong> — manage users and form catalogs
+              </li>
+              <li>
+                <strong>editor</strong> — create and edit shared briefs
+              </li>
+              <li>
+                <strong>viewer</strong> — can log in (save limits can be added
+                later)
+              </li>
+            </ul>
+          </section>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-6">
-        <section className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-bold text-stone-900 mb-1">
-            Form catalogs
-          </h2>
-          <p className="text-xs text-stone-500 mb-4">
-            Shared lists that power each tab — same add / edit / delete pattern
-            as Digital, Paid Media, PR, and IT / OLO.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Link
-              href="/admin/overview/"
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
-            >
-              <p className="text-sm font-bold text-stone-900">Overview</p>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Project leads &amp; location options
-              </p>
-            </Link>
-            <Link
-              href="/admin/it/"
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
-            >
-              <p className="text-sm font-bold text-stone-900">IT / OLO</p>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Online ordering checklist assets
-              </p>
-            </Link>
-            <Link
-              href="/admin/catalog/digital/"
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
-            >
-              <p className="text-sm font-bold text-stone-900">
-                Digital · Paid · In-Store · PR
-              </p>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Form asset catalogs
-              </p>
-            </Link>
-            <Link
-              href="/admin/legal/"
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 hover:border-campero-orange/40 hover:bg-orange-50/40 transition-colors"
-            >
-              <p className="text-sm font-bold text-stone-900">Legal templates</p>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Shared legal chips &amp; copy
-              </p>
-            </Link>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-bold text-stone-900 mb-1">Roles</h2>
-          <ul className="text-sm text-stone-600 space-y-1 list-disc pl-5">
-            <li>
-              <strong>admin</strong> — this page + create/edit/delete users
-            </li>
-            <li>
-              <strong>editor</strong> — create and edit shared briefs
-            </li>
-            <li>
-              <strong>viewer</strong> — can log in (save limits can be added
-              later)
-            </li>
-          </ul>
-        </section>
-
-        {message && (
-          <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-            {message}
-          </p>
-        )}
-        {error && (
-          <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 whitespace-pre-wrap">
-            {error}
-            {error.toLowerCase().includes("service_role") ||
-            error.toLowerCase().includes("misconfigured") ? (
+        <AdminFlash
+          message={message}
+          error={error}
+          sqlHint={
+            error &&
+            (error.toLowerCase().includes("service_role") ||
+              error.toLowerCase().includes("misconfigured")) ? (
               <span className="block mt-2 text-xs">
                 Add <code>SUPABASE_SERVICE_ROLE_KEY</code> to{" "}
                 <code>.env.local</code> (from Supabase → Settings → API Keys →
                 service_role / secret). Restart <code>npm run dev</code>. Never
                 put this key in the browser or GitHub.
               </span>
-            ) : null}
-          </p>
-        )}
+            ) : null
+          }
+        />
 
         {/* Create modal */}
         {showCreate && (
@@ -324,9 +255,7 @@ function AdminPanel() {
                 </button>
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Email
-                </label>
+                <label className={adminLabelClass}>Email</label>
                 <input
                   required
                   type="email"
@@ -334,13 +263,11 @@ function AdminPanel() {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, email: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Temporary password
-                </label>
+                <label className={adminLabelClass}>Temporary password</label>
                 <input
                   required
                   type="text"
@@ -349,12 +276,12 @@ function AdminPanel() {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, password: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                   placeholder="Min 6 characters"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
+                <label className={adminLabelClass}>
                   Display name (optional)
                 </label>
                 <input
@@ -366,11 +293,11 @@ function AdminPanel() {
                       display_name: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
+                <label className={adminLabelClass}>
                   Role
                 </label>
                 <select
@@ -381,7 +308,7 @@ function AdminPanel() {
                       role: e.target.value as UserRole,
                     }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
@@ -393,7 +320,7 @@ function AdminPanel() {
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                className="w-full rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
               >
                 {busy ? "Creating…" : "Create user"}
               </button>
@@ -419,9 +346,7 @@ function AdminPanel() {
                 </button>
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Email
-                </label>
+                <label className={adminLabelClass}>Email</label>
                 <input
                   required
                   type="email"
@@ -429,13 +354,11 @@ function AdminPanel() {
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, email: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Display name
-                </label>
+                <label className={adminLabelClass}>Display name</label>
                 <input
                   type="text"
                   value={editForm.display_name}
@@ -445,13 +368,11 @@ function AdminPanel() {
                       display_name: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
-                  Role
-                </label>
+                <label className={adminLabelClass}>Role</label>
                 <select
                   value={editForm.role}
                   onChange={(e) =>
@@ -460,7 +381,7 @@ function AdminPanel() {
                       role: e.target.value as UserRole,
                     }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
@@ -470,7 +391,7 @@ function AdminPanel() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold text-stone-600">
+                <label className={adminLabelClass}>
                   New password (optional)
                 </label>
                 <input
@@ -480,14 +401,14 @@ function AdminPanel() {
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, password: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
+                  className={adminFieldClass}
                   placeholder="Leave blank to keep current"
                 />
               </div>
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full rounded-xl bg-campero-orange py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                className="w-full rounded-xl bg-violet-700 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:opacity-50"
               >
                 {busy ? "Saving…" : "Save changes"}
               </button>
@@ -495,95 +416,67 @@ function AdminPanel() {
           </div>
         )}
 
-        <section className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-stone-100 px-5 py-3">
-            <h2 className="text-sm font-bold text-stone-900">
-              Users ({profiles.length})
-            </h2>
-          </div>
-
-          {loading ? (
-            <p className="p-8 text-center text-sm text-stone-400">
-              Loading users…
-            </p>
-          ) : profiles.length === 0 ? (
-            <p className="p-8 text-center text-sm text-stone-400">
-              No users yet. Click <strong>Add user</strong>.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-stone-100 text-left text-xs text-stone-500">
-                    <th className="px-5 py-3 font-semibold">User</th>
-                    <th className="px-5 py-3 font-semibold">Role</th>
-                    <th className="px-5 py-3 font-semibold">Joined</th>
-                    <th className="px-5 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profiles.map((p) => (
-                    <tr
-                      key={p.id}
-                      className="border-b border-stone-50 hover:bg-orange-50/30"
-                    >
-                      <td className="px-5 py-3">
-                        <div className="font-medium text-stone-900">
-                          {p.email || "—"}
-                          {p.id === user?.id && (
-                            <span className="ml-2 text-[10px] font-bold uppercase text-campero-orange">
-                              you
-                            </span>
-                          )}
-                        </div>
-                        {p.display_name && (
-                          <div className="text-xs text-stone-400">
-                            {p.display_name}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-5 py-3">
-                        <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize ${roleBadgeClass(p.role)}`}
-                        >
-                          {p.role}
+        <div className="space-y-3">
+          <AdminSectionHeader
+            title="Users"
+            count={profiles.length}
+            loading={loading}
+          />
+          <div className="space-y-3">
+            {loading ? (
+              <AdminEmptyState>Loading users…</AdminEmptyState>
+            ) : profiles.length === 0 ? (
+              <AdminEmptyState>
+                No users yet. Click <strong>Add user</strong>.
+              </AdminEmptyState>
+            ) : (
+              profiles.map((p) => (
+                <AdminListTile
+                  key={p.id}
+                  active={p.id === user?.id}
+                  title={
+                    <>
+                      {p.email || "—"}
+                      {p.id === user?.id && (
+                        <span className="ml-2 text-[10px] font-bold uppercase text-campero-orange">
+                          you
                         </span>
-                      </td>
-                      <td className="px-5 py-3 text-stone-500 text-xs">
-                        {p.created_at
-                          ? format(new Date(p.created_at), "MMM d, yyyy")
-                          : "—"}
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(p)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
-                          >
-                            <Pencil className="h-3 w-3" />
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            disabled={p.id === user?.id || busy}
-                            onClick={() => void onDelete(p)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
+                      )}
+                    </>
+                  }
+                  actions={
+                    <AdminItemActions
+                      busy={busy}
+                      deleteDisabled={p.id === user?.id}
+                      onEdit={() => openEdit(p)}
+                      onDelete={() => void onDelete(p)}
+                    />
+                  }
+                >
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    {p.display_name && (
+                      <span className="text-xs text-stone-500">
+                        {p.display_name}
+                      </span>
+                    )}
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize ${roleBadgeClass(p.role)}`}
+                    >
+                      {p.role}
+                    </span>
+                    <span className="text-xs text-stone-400">
+                      {p.created_at
+                        ? `Joined ${format(new Date(p.created_at), "MMM d, yyyy")}`
+                        : null}
+                    </span>
+                  </div>
+                </AdminListTile>
+              ))
+            )}
+          </div>
+        </div>
+      </AdminMain>
+    </AdminPageShell>
   );
 }
 

@@ -354,7 +354,7 @@ export function LeftToolbar({
                   )}
                 >
                   <Shield className="h-3.5 w-3.5 shrink-0" />
-                  Admin
+                  Manage users
                 </Link>
               )}
               <button

@@ -64,7 +64,7 @@ export function AppShell() {
   const library = useBriefStore((s) => s.library);
   const activeBriefId = useBriefStore((s) => s.activeBriefId);
   const formInstanceId = useBriefStore((s) => s.formInstanceId);
-  const { isViewer, canEdit } = useAuth();
+  const { isViewer } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -279,10 +279,7 @@ export function AppShell() {
 
               <footer className="border-t border-orange-100 bg-white py-4 mt-auto">
                 <div className="px-4 sm:px-6 text-center text-xs text-stone-400">
-                  Campero Promo Brief Builder ·{" "}
-                  {canEdit
-                    ? "Saves when you change section tabs"
-                    : "Viewers can browse and export only"}
+                  Campero Brief Builder · Version 1.0
                 </div>
               </footer>
             </div>
