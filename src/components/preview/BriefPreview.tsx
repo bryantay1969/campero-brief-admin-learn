@@ -1,7 +1,7 @@
 "use client";
 
-import type { PromoBrief } from "@/lib/types";
-import { formatDateRange, formatPhotoRefs } from "@/lib/utils";
+import type { PhotoAssetReference, PromoBrief } from "@/lib/types";
+import { formatDateRange } from "@/lib/utils";
 import { BRAND_GUIDELINES_PATH } from "@/lib/brandGuidelines";
 import { formatDigitalAssetDetail } from "@/lib/digitalAssets";
 import { formatITAssetDetail, IT_PROJECT_OWNER_NOTE } from "@/lib/itElements";
@@ -76,6 +76,45 @@ function AssetLine({
   );
 }
 
+/** Name + “click here” link for photography / asset references. */
+function PhotoRefsList({
+  refs,
+}: {
+  refs: PhotoAssetReference[] | undefined | null;
+}) {
+  const items = (Array.isArray(refs) ? refs : []).filter(
+    (r) => (r.name || "").trim() || (r.link || "").trim()
+  );
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="space-y-1.5">
+      {items.map((r) => {
+        const name = (r.name || "").trim() || "Untitled reference";
+        const link = (r.link || "").trim();
+        return (
+          <li key={r.id} className="leading-snug">
+            <span className="font-semibold text-stone-900">{name}</span>
+            {link ? (
+              <>
+                {" · "}
+                <a
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-campero-orange underline"
+                >
+                  click here
+                </a>
+              </>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function BriefPreview({ brief }: { brief: PromoBrief }) {
   const dateRange = formatDateRange(brief.launchDate, brief.endDate);
 
@@ -143,7 +182,7 @@ export function BriefPreview({ brief }: { brief: PromoBrief }) {
         <Row label="Messaging">{brief.messagingBullets}</Row>
         <Row label="Creative notes">{brief.creativeNotes}</Row>
         <Row label="Photo/asset refs">
-          {formatPhotoRefs(brief.foodPhotoReferences)}
+          <PhotoRefsList refs={brief.foodPhotoReferences} />
         </Row>
         {/* Digital — only when at least one asset is checked */}
         {digital.length > 0 && (

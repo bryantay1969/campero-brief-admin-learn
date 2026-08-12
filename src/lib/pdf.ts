@@ -1,5 +1,5 @@
 import type { PromoBrief } from "./types";
-import { formatDateRange, formatPhotoRefs } from "./utils";
+import { formatDateRange } from "./utils";
 import { BRAND_GUIDELINES_PATH } from "./brandGuidelines";
 import { formatDigitalAssetDetail } from "./digitalAssets";
 import { formatITAssetDetail, IT_PROJECT_OWNER_NOTE } from "./itElements";
@@ -275,7 +275,66 @@ export async function downloadBriefPdf(brief: PromoBrief): Promise<void> {
   sectionTitle("Messaging & Creative Direction");
   row("Messaging", brief.messagingBullets);
   row("Creative notes", brief.creativeNotes);
-  row("Photo/asset refs", formatPhotoRefs(brief.foodPhotoReferences));
+
+  // Photo refs: name · click here (linked when URL present)
+  {
+    const photoItems = (
+      Array.isArray(brief.foodPhotoReferences)
+        ? brief.foodPhotoReferences
+        : []
+    ).filter((r) => (r.name || "").trim() || (r.link || "").trim());
+
+    if (photoItems.length === 0) {
+      row("Photo/asset refs", "—");
+    } else {
+      const label = "Photo/asset refs";
+      const boxPad = ROW_PAD_Y;
+      const lineH = LINE_H;
+      const blockH =
+        boxPad +
+        photoItems.length * lineH +
+        boxPad;
+
+      ensureSpace(blockH + 2);
+      const baseline0 = y + boxPad + FONT * 0.85;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(FONT);
+      pdf.setTextColor(...muted);
+      pdf.text(label, marginX, baseline0);
+
+      let lineY = baseline0;
+      const textX = marginX + labelWidth + valueGap;
+      photoItems.forEach((r) => {
+        const name = (r.name || "").trim() || "Untitled reference";
+        const link = (r.link || "").trim();
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(FONT);
+        pdf.setTextColor(...dark);
+        pdf.text(name, textX, lineY);
+
+        if (link) {
+          const nameW = pdf.getTextWidth(name);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(...muted);
+          pdf.text(" · ", textX + nameW, lineY);
+          const sepW = pdf.getTextWidth(" · ");
+          pdf.setTextColor(...orange);
+          pdf.setFont("helvetica", "bold");
+          pdf.textWithLink("click here", textX + nameW + sepW, lineY, {
+            url: link.startsWith("http") ? link : `https://${link}`,
+          });
+        }
+        lineY += lineH;
+      });
+
+      y += blockH;
+      pdf.setDrawColor(...lightLine);
+      pdf.setLineWidth(0.5);
+      pdf.line(marginX, y, marginX + contentWidth, y);
+    }
+  }
 
   if (digital.length > 0) {
     sectionTitle("Digital Assets");
