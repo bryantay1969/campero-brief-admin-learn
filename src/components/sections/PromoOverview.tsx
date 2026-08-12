@@ -34,15 +34,10 @@ export function PromoOverview() {
   const [locations, setLocations] = useState<string[]>(() =>
     BUILTIN_LOCATIONS.map((o) => o.label)
   );
-  const [loadingOptions, setLoadingOptions] = useState(true);
-  const [optionsSource, setOptionsSource] = useState<"cloud" | "builtin">(
-    "builtin"
-  );
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoadingOptions(true);
       try {
         const [leads, locs] = await Promise.all([
           fetchOverviewOptionsForForm("project_lead"),
@@ -51,12 +46,8 @@ export function PromoOverview() {
         if (cancelled) return;
         setProjectLeads(leads.map((o) => o.label));
         setLocations(locs.map((o) => o.label));
-        const fromCloud = leads.some((o) => o.dbId) || locs.some((o) => o.dbId);
-        setOptionsSource(fromCloud ? "cloud" : "builtin");
       } catch {
         // Built-ins already in state
-      } finally {
-        if (!cancelled) setLoadingOptions(false);
       }
     })();
     return () => {
@@ -84,15 +75,8 @@ export function PromoOverview() {
 
   return (
     <SectionCard id="section-overview" title="Promo Overview">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-stone-500">
-          {loadingOptions
-            ? "Loading catalog…"
-            : optionsSource === "cloud"
-              ? "Shared catalog"
-              : "Built-in catalog"}
-        </p>
-        {canAdmin && (
+      {canAdmin && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
             href="/admin/overview/"
             className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
@@ -100,8 +84,8 @@ export function PromoOverview() {
             <ExternalLink className="h-3.5 w-3.5" />
             Manage overview options
           </Link>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>

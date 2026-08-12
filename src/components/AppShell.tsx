@@ -239,7 +239,11 @@ export function AppShell() {
               <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-6xl w-full mx-auto">
                 <SectionBody key={formInstanceId} id={activeSection} />
 
-                <div className="mt-6 flex items-center justify-between gap-3">
+                <div
+                  className={`mt-6 flex items-center gap-3 ${
+                    next ? "justify-between" : "justify-start"
+                  }`}
+                >
                   <button
                     type="button"
                     disabled={!prev}
@@ -249,7 +253,7 @@ export function AppShell() {
                     <ChevronLeft className="h-4 w-4" />
                     {prev ? prev.shortLabel : "Back"}
                   </button>
-                  {next ? (
+                  {next && (
                     <button
                       type="button"
                       onClick={() => setActiveSection(next.id)}
@@ -259,10 +263,6 @@ export function AppShell() {
                       Save and Continue
                       <ChevronRight className="h-4 w-4" />
                     </button>
-                  ) : (
-                    <span className="text-xs text-stone-400">
-                      Review complete
-                    </span>
                   )}
                 </div>
                 {!hydrated && (

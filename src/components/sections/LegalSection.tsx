@@ -27,7 +27,6 @@ export function LegalSection() {
   const [templates, setTemplates] = useState<LegalTemplateDef[]>(
     BUILTIN_LEGAL_TEMPLATES
   );
-  const [source, setSource] = useState<"cloud" | "builtin">("builtin");
   const [loading, setLoading] = useState(true);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -42,7 +41,6 @@ export function LegalSection() {
         const list = await fetchLegalTemplatesForForm();
         if (cancelled) return;
         setTemplates(list);
-        setSource(list.some((t) => t.dbId) ? "cloud" : "builtin");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -144,11 +142,7 @@ export function LegalSection() {
         <p className="text-xs text-stone-500">
           {loading
             ? "Loading templates…"
-            : source === "cloud"
-              ? "Shared templates · live for all users"
-              : "Built-in templates"}
-          {" · "}
-          Pick a template or edit text for this brief only
+            : "Pick a template or edit text for this brief only"}
         </p>
         {canAdmin && (
           <Link

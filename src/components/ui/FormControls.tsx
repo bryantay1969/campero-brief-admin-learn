@@ -203,11 +203,14 @@ export function AssetCard({
 export function SectionCard({
   title,
   subtitle,
+  headerActions,
   children,
   id,
 }: {
   title: string;
   subtitle?: string;
+  /** Optional controls aligned to the right of the title (e.g. Preview downloads). */
+  headerActions?: ReactNode;
   children: ReactNode;
   id?: string;
 }) {
@@ -217,12 +220,21 @@ export function SectionCard({
       className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden"
     >
       <header className="border-b border-stone-100 bg-gradient-to-r from-orange-50/80 to-amber-50/40 px-5 py-4 sm:px-6">
-        <h2 className="text-lg font-bold text-stone-900 tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-sm text-stone-500 mt-0.5">{subtitle}</p>
-        )}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-stone-900 tracking-tight">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-sm text-stone-500 mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          {headerActions && (
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              {headerActions}
+            </div>
+          )}
+        </div>
       </header>
       <div className="p-5 sm:p-6 space-y-5">{children}</div>
     </section>

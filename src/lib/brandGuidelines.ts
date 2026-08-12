@@ -72,7 +72,7 @@ export const SECTIONS = [
   { id: "legal" as const, label: "Legal", shortLabel: "Legal" },
   {
     id: "review" as const,
-    label: "Review",
-    shortLabel: "Review",
+    label: "Preview",
+    shortLabel: "Preview",
   },
 ];
