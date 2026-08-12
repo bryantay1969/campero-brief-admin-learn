@@ -20,6 +20,7 @@ import type { SectionId } from "@/lib/types";
 import { SECTIONS } from "@/lib/brandGuidelines";
 import { BriefUrlSync } from "@/components/BriefUrlSync";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { LEFT_TOOLBAR_OPEN_KEY } from "@/lib/uiPrefs";
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,8 +28,6 @@ import {
   PanelLeft,
   X,
 } from "lucide-react";
-
-const SIDEBAR_KEY = "campero-left-toolbar-open";
 
 function SectionBody({ id }: { id: SectionId }) {
   switch (id) {
@@ -66,21 +65,23 @@ export function AppShell() {
   const formInstanceId = useBriefStore((s) => s.formInstanceId);
   const { isViewer } = useAuth();
 
-  // Always closed on load (login, refresh, new tab). Open only for this session.
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  useEffect(() => {
-    // Drop any old “left open” preference so login never restores an open menu
+  // Default closed; persist open/closed while signed in (cleared on logout)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
     try {
-      localStorage.removeItem(SIDEBAR_KEY);
+      return localStorage.getItem(LEFT_TOOLBAR_OPEN_KEY) === "1";
     } catch {
-      // ignore
+      return false;
     }
-  }, []);
+  });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const setSidebar = (open: boolean) => {
     setSidebarOpen(open);
+    try {
+      localStorage.setItem(LEFT_TOOLBAR_OPEN_KEY, open ? "1" : "0");
+    } catch {
+      // ignore
+    }
   };
 
   useEffect(() => {

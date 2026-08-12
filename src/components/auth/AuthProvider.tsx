@@ -17,6 +17,7 @@ import {
   type ProfileRow,
   type UserRole,
 } from "@/lib/supabase/adminApi";
+import { clearLeftToolbarPreference } from "@/lib/uiPrefs";
 import { useBriefStore } from "@/store/briefStore";
 
 type AuthContextValue = {
@@ -138,6 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await getSupabase().auth.signOut();
     setSession(null);
     setProfile(null);
+    // Always start closed after the next login
+    clearLeftToolbarPreference();
   }, []);
 
   const role = profile?.role ?? null;
