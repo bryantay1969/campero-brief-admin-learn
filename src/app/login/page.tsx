@@ -37,7 +37,9 @@ export default function LoginPage() {
             PC
           </div>
           <div>
-            <h1 className="text-lg font-bold text-stone-900">Log in</h1>
+            <h1 className="text-lg font-bold text-stone-900">
+              Campero Brief Builder
+            </h1>
             <p className="text-xs text-stone-500">
               Sign in with the account your admin provided
             </p>
@@ -97,8 +99,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-stone-400">
-          Accounts are created by an admin under Manage users. You must log in
-          to use the brief builder.
+          You must log in to use Campero Brief Builder.
         </p>
       </div>
     </div>
