@@ -17,7 +17,10 @@ import {
   type ProfileRow,
   type UserRole,
 } from "@/lib/supabase/adminApi";
-import { clearLeftToolbarPreference } from "@/lib/uiPrefs";
+import {
+  clearLeftToolbarPreference,
+  setLeftToolbarOpenPreference,
+} from "@/lib/uiPrefs";
 import { useBriefStore } from "@/store/briefStore";
 
 type AuthContextValue = {
@@ -120,6 +123,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
+      if (!error) {
+        // Always land on a blank brief (don't restore the previous browser draft)
+        useBriefStore.getState().newBrief();
+        // Open the left menu for the new session
+        setLeftToolbarOpenPreference(true);
+      }
       return error ? error.message : null;
     } catch (e) {
       return e instanceof Error ? e.message : "Sign in failed";
@@ -139,7 +148,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await getSupabase().auth.signOut();
     setSession(null);
     setProfile(null);
-    // Always start closed after the next login
+    // Clear form so the next session doesn't show this user's draft
+    useBriefStore.getState().newBrief();
+    // Next login will set menu open; clear any prior preference on logout
     clearLeftToolbarPreference();
   }, []);
 

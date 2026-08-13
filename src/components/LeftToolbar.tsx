@@ -131,8 +131,13 @@ export function LeftToolbar({
     if (!canEdit) return "View only";
     if (saveStatus === "saving") return "Saving…";
     if (saveStatus === "error") return "Save failed";
-    if (saveStatus === "saved")
-      return cloudEnabled ? "Saved to cloud" : "Saved";
+    if (saveStatus === "saved") {
+      const title =
+        active?.name ||
+        brief.promoName.trim() ||
+        "Untitled brief";
+      return cloudEnabled ? `Saved · ${title}` : `Saved · ${title}`;
+    }
     if (isDirty) return "Unsaved · saves on next tab";
     if (activeBriefId) return "Saved";
     return "New empty draft";

@@ -1,4 +1,5 @@
 import type { PhysicalAsset, PromoBrief } from "./types";
+import { untitledBriefPromoName } from "./briefIds";
 import {
   createDefaultDigitalAssets,
   createDigitalAsset,
@@ -150,7 +151,8 @@ export function createEmptyBrief(): PromoBrief {
   const year = new Date().getFullYear();
   return {
     projectLead: "",
-    promoName: "",
+    // Pre-fill so saves/library always have a clear default title
+    promoName: untitledBriefPromoName(),
     launchDate: "",
     endDate: "",
     oneDayOnly: false,
@@ -205,9 +207,9 @@ export function createSampleBrief(): PromoBrief {
   return {
     ...empty,
     projectLead: "Allie Abilez",
-    promoName: "National Fried Chicken Day",
+    promoName: "National Chicken Month - Sample Brief",
     launchDate: "2026-07-06",
-    endDate: "2026-07-06",
+    endDate: "2026-08-06",
     oneDayOnly: true,
     quickNote: "We can drop this offer into loyalty accounts in the Rewards section",
     loyaltyOnly: "yes",

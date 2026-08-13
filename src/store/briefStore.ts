@@ -319,11 +319,15 @@ export const useBriefStore = create<BriefState>()(
         const state = get();
         const now = new Date().toISOString();
         const brief = stampBrief(state.brief);
+        // Prefer explicit name / promo name; keep prior title only if still untitled
+        const promo = brief.promoName.trim();
+        const existingName = state.activeBriefId
+          ? state.library.find((b) => b.id === state.activeBriefId)?.name
+          : undefined;
         const resolvedName =
           (name && name.trim()) ||
-          (state.activeBriefId
-            ? state.library.find((b) => b.id === state.activeBriefId)?.name
-            : undefined) ||
+          promo ||
+          existingName ||
           defaultBriefName(brief.promoName, brief.projectLead);
 
         if (state.activeBriefId) {

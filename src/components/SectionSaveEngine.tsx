@@ -38,17 +38,16 @@ export function SectionSaveEngine({
     const state = useBriefStore.getState();
     if (!state.isDirty) return;
 
+    // Hybrid naming: prefer promo name, else keep existing library title,
+    // else auto-title (e.g. "Untitled brief · Aug 12, 2026").
+    const promo = state.brief.promoName.trim();
+    const existingName = state.activeBriefId
+      ? state.library.find((b) => b.id === state.activeBriefId)?.name
+      : undefined;
     const name =
-      state.library.find((b) => b.id === state.activeBriefId)?.name ||
+      promo ||
+      existingName ||
       defaultBriefName(state.brief.promoName, state.brief.projectLead);
-
-    const hasContent =
-      !!state.brief.promoName.trim() ||
-      !!state.brief.projectLead.trim() ||
-      !!state.brief.locations.trim() ||
-      !!state.brief.messagingBullets.trim() ||
-      !!state.brief.legal.legalText.trim();
-    if (!hasContent && !state.activeBriefId) return;
 
     savingRef.current = true;
     setStatus("saving");
